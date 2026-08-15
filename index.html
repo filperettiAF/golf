@@ -2817,20 +2817,32 @@ VIEWS.nuovoGiro = function(){
 };
 
 /* ==========================================================
-   BUCA — due fasi dichiarate: avvicinamento e putting
+   BUCA — compilazione a fine giro, dalla carta segnapunti
    ==========================================================
-   Il passaggio al putting e' un tocco esplicito. Da li' il bastone e' il putter
-   e non e' modificabile, il tastierino e' tarato sulle distanze corte e i controlli
-   di plausibilita' cambiano soglia.
-   L'esito del colpo PRECEDENTE si raccoglie qui, non nella scheda del colpo che si
-   sta per giocare: il segno si conosce dopo aver tirato, non prima. Stessa ragione
-   per cui anche la penalita' e' stata spostata qui.                              */
+   Ridisegnata il 15/08/2026 sul modo in cui i dati vengono raccolti davvero:
+   in campo si annotano lie e distanza sulla carta, l'app si compila a giro
+   finito. Quindi:
+   1. prima si dichiara il RISULTATO della buca (colpi totali e putt), e le
+      schede dei colpi compaiono da sole, nel numero giusto;
+   2. il primo colpo e' sempre dal tee: la scelta del lie non viene chiesta;
+   3. l'esito a nove settori del colpo N sta DENTRO la scheda del colpo N,
+      e compare quando la posizione d'arrivo e' nota: subito per l'ultimo
+      colpo lungo (la palla e' in green) e per i putt non imbucati, appena
+      inserita la distanza del colpo successivo per gli altri (entro 40 m);
+   4. la penalita' si segna sul colpo stesso: a fine giro non c'e' piu' la
+      contraddizione del "prima di tirare", e ogni penalita' toglie da sola
+      una scheda, perche' il colpo di penalita' non e' un colpo giocato.   */
+
+function rerenderFermo(){
+  const y=window.scrollY;
+  render();
+  window.scrollTo(0,y);
+}
+
 VIEWS.buca = function(){
   if(!bozza){ nav=[{view:'home'}]; return VIEWS.home(); }
   const idx=bozza.bucaCorrente, b=bozza.buche[idx];
-  if(!b.fase) b.fase='lungo';
   const bastoni=LS.get('hcp_bastoni_v2',BASTONI_DEFAULT);
-  const putting = b.fase==='putting';
   const body=el('<div></div>');
 
   /* --- intestazione della buca --- */
@@ -2840,236 +2852,254 @@ VIEWS.buca = function(){
         [3,4,5,6].map(p=>'<option'+(p===b.par?' selected':'')+'>'+p+'</option>').join('')+'</select><br>'+
       '<input type="number" id="distSel" value="'+(b.distanza===null||b.distanza===undefined?'':b.distanza)+'" placeholder="metri" style="width:76px;margin-top:4px;padding:3px;font-size:13px;"> m</div>'+
   '</div>'));
-  body.querySelector('#parSel').onchange=e=>{ b.par=parseInt(e.target.value,10); salvaBozza(); render(); };
-  body.querySelector('#distSel').onchange=e=>{ b.distanza=e.target.value?parseFloat(e.target.value):null; salvaBozza(); render(); };
+  body.querySelector('#parSel').onchange=e=>{ b.par=parseInt(e.target.value,10); salvaBozza(); rerenderFermo(); };
+  body.querySelector('#distSel').onchange=e=>{ b.distanza=e.target.value?parseFloat(e.target.value):null; salvaBozza(); rerenderFermo(); };
 
-  /* --- colpi gia' inseriti --- */
-  if(b.colpi.length){
-    const c=el('<div class="card"><h2>Colpi di questa buca</h2></div>');
-    b.colpi.forEach((s,i)=>{
-      const next=b.colpi[i+1]||null;
-      const e0=colpiAttesi(s.lie,s.distM,'tour');
-      const e1=next?colpiAttesi(next.lie,next.distM,'tour'):null;
-      const sg = e1===null ? null : (e0-e1-1-(s.penalita?1:0));
-      const badge = s.esito ? '<span class="esitobadge">'+ESITO_NOME[s.esito]+'</span>' : '';
-      c.appendChild(el('<div class="shot'+(s.lie==='green'?' putt':'')+'">'+
-        '<span>'+(i+1)+'. '+LIE_NOME[s.lie]+' '+s.distM+' m · '+esc(s.bastone)+
-          (s.penalita?' · +1 '+(PENALITA_NOME[s.penTipo]||'pen.'):'')+badge+'</span>'+
-        '<span class="sgv '+(sg===null?'':(sg>=0?'pos':'neg'))+'">'+(sg===null?'—':sgn(sg))+'</span></div>'));
-    });
-    const del=el('<button class="btn ghost" style="margin-top:8px">Annulla ultimo colpo</button>');
-    del.onclick=()=>{
-      b.colpi.pop();
-      if(b.colpi.length){ const u=b.colpi[b.colpi.length-1]; u.esito=null; b.fase = u.lie==='green'?'putting':'lungo'; }
-      else b.fase='lungo';
+  /* ============ PASSO 1 — il risultato della buca ============ */
+  if(!b.dich){
+    const NOMI={'-2':'Eagle','-1':'Birdie','0':'Par','1':'Bogey','2':'Doppio','3':'Triplo'};
+    const scelte=[]; for(let d=-2; d<=6; d++){ const v=b.par+d; if(v>=1) scelte.push({v:v, d:d}); }
+    const card=el('<div class="card"><h2>Risultato della buca</h2>'+
+      '<div class="hint">Si compila a fine giro, dalla carta: prima il totale della buca, '+
+        'poi i colpi uno per uno. Le schede compaiono da sole, nel numero giusto.</div>'+
+      '<label>Colpi totali (penalita’ comprese)</label>'+
+      '<div class="grid3" id="scGrid">'+scelte.map(x=>'<div class="chip" data-v="'+x.v+'">'+x.v+
+        '<br><span style="font-size:10px;opacity:.75">'+(NOMI[String(x.d)]||'+'+x.d)+'</span></div>').join('')+'</div>'+
+      '<label style="margin-top:12px;">Di cui putt (colpi sul green)</label>'+
+      '<div class="grid3" id="ptGrid">'+[0,1,2,3,4,5].map(v=>'<div class="chip" data-v="'+v+'">'+v+'</div>').join('')+'</div>'+
+      '<div class="hint tight" id="p1err" style="margin-top:8px"></div>'+
+      '<button class="btn big" id="prep" disabled style="margin-top:10px">Prepara le schede dei colpi</button>'+
+    '</div>');
+    let scSel=null, ptSel=null;
+    const btn=card.querySelector('#prep'), errBox=card.querySelector('#p1err');
+    function aggiorna(){
+      let err='';
+      if(scSel!==null && ptSel!==null){
+        if(scSel-ptSel<1) err='Con '+scSel+' colpi totali e '+ptSel+' putt non resta nemmeno il colpo dal tee: controlla i numeri.';
+      }
+      errBox.textContent=err;
+      btn.disabled = !(scSel!==null && ptSel!==null && !err);
+      if(!btn.disabled) btn.textContent='Prepara le schede: '+(scSel-ptSel)+' colpi + '+ptSel+' putt';
+    }
+    card.querySelector('#scGrid').onclick=e=>{
+      const c=e.target.closest('.chip'); if(!c) return;
+      card.querySelectorAll('#scGrid .chip').forEach(x=>x.classList.remove('selected'));
+      c.classList.add('selected'); scSel=parseInt(c.dataset.v,10); aggiorna();
+    };
+    card.querySelector('#ptGrid').onclick=e=>{
+      const c=e.target.closest('.chip'); if(!c) return;
+      card.querySelectorAll('#ptGrid .chip').forEach(x=>x.classList.remove('selected'));
+      c.classList.add('selected'); ptSel=parseInt(c.dataset.v,10); aggiorna();
+    };
+    btn.onclick=()=>{
+      b.dich={colpi:scSel, putt:ptSel};
+      b.colpi=[];
+      const nL=scSel-ptSel;   // le penalita' si segnano dopo, sulle schede
+      for(let i2=0;i2<nL;i2++) b.colpi.push({lie:i2===0?'tee':null,
+        distM:(i2===0 && b.distanza)?b.distanza:null,
+        bastone:null, penalita:false, penTipo:null, esito:null});
+      for(let p2=0;p2<ptSel;p2++) b.colpi.push({lie:'green', distM:null,
+        bastone:'Putter', penalita:false, penTipo:null, esito:null});
       salvaBozza(); render();
     };
-    c.appendChild(del);
-    body.appendChild(c);
+    body.appendChild(card);
+    return {header:bozza.circolo, body};
   }
 
-  /* --- barra putting --- */
-  if(putting){
-    const np=b.colpi.filter(x=>x.lie==='green').length;
-    const perGreen=b.colpi.length-np+b.colpi.reduce((s,x)=>s+(x.penalita?1:0),0);
-    body.appendChild(el('<div class="puttbar">'+
-      '<div><div class="lab">Putt</div><div class="big">'+np+'</div></div>'+
-      '<div><div class="lab">Al green in</div><div class="big">'+perGreen+'</div></div>'+
-      '<div style="margin-left:auto;text-align:right"><div class="lab">Par</div><div class="big">'+b.par+'</div></div>'+
-    '</div>'));
-  }
+  /* ============ PASSO 2 — le schede dei colpi ============ */
+  const colpi=b.colpi;
+  const nPen=colpi.reduce((s,c)=>s+(c.penalita?1:0),0);
+  const totale=colpi.length+nPen;
+  const quadra = totale===b.dich.colpi;
 
-  const nShot=b.colpi.length+1;
-  const prec = b.colpi[b.colpi.length-1] || null;
+  body.appendChild(el('<div class="puttbar">'+
+    '<div><div class="lab">Schede</div><div class="big">'+colpi.length+'</div></div>'+
+    '<div><div class="lab">Penalita’</div><div class="big">'+nPen+'</div></div>'+
+    '<div style="margin-left:auto;text-align:right"><div class="lab">Totale buca</div>'+
+      '<div class="big" style="color:'+(quadra?'inherit':'var(--rosso)')+'">'+totale+' / '+b.dich.colpi+'</div></div>'+
+  '</div>'));
+  if(!quadra) body.appendChild(el('<div class="hint tight" style="color:var(--rosso);margin:-6px 0 10px 0">'+
+    'Le schede piu’ le penalita’ non tornano col totale dichiarato. Aggiusta le schede o tocca '+
+    '"Cambia risultato" in fondo.</div>'));
 
-  /* ================= FASE PUTTING ================= */
-  if(putting){
-    const form=el('<div class="card"><h2>Putt '+(b.colpi.filter(x=>x.lie==='green').length+1)+'</h2>'+
-      '<div class="puttflag">Sei in green. Il bastone e’ il putter e non serve sceglierlo.</div>'+
-      '<label>Distanza dalla buca (metri)</label>'+
-      '<input type="number" inputmode="decimal" step="0.1" id="dist" placeholder="es. 2,4">'+
-      '<div class="distchips" id="dchip">'+
-        [0.5,1,1.5,2,3,5,8,12].map(v=>'<div class="chip" data-v="'+v+'">'+String(v).replace('.',',')+' m</div>').join('')+
-      '</div>'+
-      '<div id="esitoWrap"></div>'+
-      '<div id="avvBox"></div>'+
-      '<button class="btn" style="margin-top:14px;" id="add">Aggiungi putt</button>'+
-      '<button class="btn ghost" style="margin-top:2px" id="esci">La palla non e’ in green</button>'+
-    '</div>');
-    montaEsito(form, b, prec, ()=>{});
-    const dist=form.querySelector('#dist');
-    form.querySelector('#dchip').onclick=e=>{
-      const c=e.target.closest('.chip'); if(!c) return;
-      dist.value=c.dataset.v; dist.dispatchEvent(new Event('input'));
-      form.querySelectorAll('#dchip .chip').forEach(x=>x.classList.remove('selected'));
-      c.classList.add('selected');
-    };
-    dist.oninput=()=>aggiornaEsitoVisibilita(form, b, prec, parseFloat(dist.value));
-    // sul green il settore serve sempre, quindi la griglia compare subito e non
-    // solo dopo che hai digitato la distanza
-    aggiornaEsitoVisibilita(form, b, prec, parseFloat(dist.value));
-    form.querySelector('#esci').onclick=()=>{ b.fase='lungo'; salvaBozza(); render(); };
-    form.querySelector('#add').onclick=()=>aggiungiColpo(form, b, idx, {lie:'green', bastone:'Putter'});
-    body.appendChild(form);
-  }
-  /* ================= FASE AVVICINAMENTO ================= */
-  else {
-    const lieOpz = LIE_OPZ.filter(l=>l.k!=='green');
-    const lieDefault = nShot===1 ? 'tee' : null;
-    const distDefault = nShot===1 && b.distanza ? b.distanza : '';
-    const form=el('<div class="card"><h2>Colpo '+nShot+'</h2>'+
-      '<div class="hint">Inserisci <b>prima di tirare</b>: dove si trova la palla, quanto manca alla buca, che bastone usi.</div>'+
-      '<label>Lie</label>'+
-      '<div class="grid3" id="lieGrid">'+lieOpz.map(l=>'<div class="chip'+(l.k===lieDefault?' selected':'')+'" data-v="'+l.k+'">'+l.n+'</div>').join('')+'</div>'+
-      '<div class="hint tight" id="lieAiuto" style="margin-top:6px">'+(lieDefault?esc(LIE_AIUTO[lieDefault]):'Tocca il lie per vederne la definizione.')+'</div>'+
-      '<label style="margin-top:12px;">Distanza dalla buca (metri)</label>'+
-      '<input type="number" inputmode="decimal" step="0.1" id="dist" value="'+distDefault+'" placeholder="es. 145">'+
-      '<div id="esitoWrap"></div>'+
-      '<label style="margin-top:12px;">Bastone</label>'+
-      '<div class="grid3" id="bastGrid">'+bastoni.filter(x=>x!=='Putter').map(x=>'<div class="chip" data-v="'+esc(x)+'">'+esc(x)+'</div>').join('')+
-        '<div class="chip" data-v="Putter">Putter</div></div>'+
-      '<div id="avvBox"></div>'+
-      '<button class="btn" style="margin-top:14px;" id="add">Aggiungi colpo</button>'+
-      '<button class="btn secondary" style="margin-top:2px" id="ingreen">⛳ La palla e’ in green — passa al putting</button>'+
-    '</div>');
-    montaEsito(form, b, prec, ()=>{});
-    let lieSel=lieDefault, bastSel=null;
-    form.querySelector('#lieGrid').onclick=e=>{
-      const c=e.target.closest('.chip'); if(!c) return;
-      form.querySelectorAll('#lieGrid .chip').forEach(x=>x.classList.remove('selected'));
-      c.classList.add('selected'); lieSel=c.dataset.v;
-      form.querySelector('#lieAiuto').innerHTML=esc(LIE_AIUTO[lieSel]||'');
-    };
-    form.querySelector('#bastGrid').onclick=e=>{
-      const c=e.target.closest('.chip'); if(!c) return;
-      form.querySelectorAll('#bastGrid .chip').forEach(x=>x.classList.remove('selected'));
-      c.classList.add('selected'); bastSel=c.dataset.v;
-    };
-    const dist=form.querySelector('#dist');
-    dist.oninput=()=>aggiornaEsitoVisibilita(form, b, prec, parseFloat(dist.value));
-    aggiornaEsitoVisibilita(form, b, prec, parseFloat(dist.value));
-    form.querySelector('#ingreen').onclick=()=>{ b.fase='putting'; salvaBozza(); render(); };
-    form.querySelector('#add').onclick=()=>aggiungiColpo(form, b, idx, {getLie:()=>lieSel, getBast:()=>bastSel});
-    body.appendChild(form);
-  }
+  const lieOpz = LIE_OPZ.filter(l=>l.k!=='green');
+  colpi.forEach((c,i)=>{
+    const isPutt = c.lie==='green';
+    const next = colpi[i+1]||null;
+    const ultimo = i===colpi.length-1;
+    const nPutt = colpi.slice(0,i+1).filter(x=>x.lie==='green').length;
+    const titolo = isPutt ? ('Putt '+nPutt+(ultimo?' — imbucato':'')) :
+                   ('Colpo '+(i+1)+(i===0?' — dal tee':''));
+    const card=el('<div class="card scheda"><h2>'+titolo+'</h2></div>');
 
-  /* --- chiusura della buca --- */
-  if(b.colpi.length){
-    const pen=b.colpi.reduce((s,c)=>s+(c.penalita?1:0),0);
-    const tot=b.colpi.length+pen;
-    const isUlt = idx===bozza.numBuche-1;
-    const chiudi=el('<button class="btn big">⛳ Palla in buca — '+tot+' colpi'+(isUlt?' · termina giro':'')+'</button>');
-    chiudi.onclick=()=>chiudiBuca(b, idx, true);
-    body.appendChild(chiudi);
-    const racc=el('<button class="btn ghost">Buca non completata (raccolta o concessa)</button>');
-    racc.onclick=()=>{
-      if(!confirm('Segnare la buca come non completata?\n\nIl punteggio resta quello dei colpi registrati, ma la buca viene marcata e resta fuori dai calcoli che richiedono una buca chiusa.')) return;
-      chiudiBuca(b, idx, false);
-    };
-    body.appendChild(racc);
-  }
-  return {header:bozza.circolo+(putting?' · putting':''), body, putting:putting};
+    if(!isPutt){
+      if(i===0){
+        card.appendChild(el('<div class="hint tight" style="margin-bottom:8px">Partenza dal tee. '+
+          'La distanza e’ precompilata dalla carta del percorso: correggila se il tee era spostato.</div>'));
+      } else {
+        const lg=el('<div><label>Lie</label><div class="grid3">'+
+          lieOpz.map(l=>'<div class="chip'+(l.k===c.lie?' selected':'')+'" data-v="'+l.k+'">'+l.n+'</div>').join('')+
+          '</div><div class="hint tight" style="margin-top:6px">'+
+          (c.lie?esc(LIE_AIUTO[c.lie]||''):'Tocca il lie per vederne la definizione.')+'</div></div>');
+        lg.querySelector('.grid3').onclick=e=>{
+          const ch=e.target.closest('.chip'); if(!ch) return;
+          c.lie=ch.dataset.v; salvaBozza(); rerenderFermo();
+        };
+        card.appendChild(lg);
+      }
+      const di=el('<div><label style="margin-top:10px;">Distanza dalla buca (metri)</label>'+
+        '<input type="number" inputmode="decimal" step="0.1" value="'+(c.distM===null||c.distM===undefined?'':c.distM)+'" placeholder="es. 145"></div>');
+      di.querySelector('input').onchange=e=>{
+        c.distM=e.target.value===''?null:parseFloat(e.target.value);
+        salvaBozza(); rerenderFermo();
+      };
+      card.appendChild(di);
+      const bg=el('<div><label style="margin-top:10px;">Bastone</label><div class="grid3">'+
+        bastoni.filter(x=>x!=='Putter').map(x=>'<div class="chip'+(x===c.bastone?' selected':'')+'" data-v="'+esc(x)+'">'+esc(x)+'</div>').join('')+
+        '<div class="chip'+(c.bastone==='Putter'?' selected':'')+'" data-v="Putter">Putter</div></div></div>');
+      bg.querySelector('.grid3').onclick=e=>{
+        const ch=e.target.closest('.chip'); if(!ch) return;
+        c.bastone=ch.dataset.v; salvaBozza(); rerenderFermo();
+      };
+      card.appendChild(bg);
+      const pg=el('<div><label style="margin-top:10px;">Penalita’ su questo colpo?</label>'+
+        '<div class="grid3">'+PENALITA_OPZ.map(p=>'<div class="chip small'+((c.penalita?c.penTipo:'')===p.k||(!c.penalita&&p.k==='')?' selected':'')+'" data-v="'+p.k+'">'+p.n+
+          (p.d?'<br><span style="font-size:10px;opacity:.75">'+p.d+'</span>':'')+'</div>').join('')+'</div>'+
+        '<div class="hint tight" style="margin-top:6px">Il colpo di penalita’ conta nel totale ma non e’ un colpo giocato: '+
+          'segnandolo, una scheda vuota si toglie da sola.</div></div>');
+      pg.querySelector('.grid3').onclick=e=>{
+        const ch=e.target.closest('.chip'); if(!ch) return;
+        const nuovo=ch.dataset.v;
+        const prima=c.penalita;
+        if(nuovo===''){ c.penalita=false; c.penTipo=null; }
+        else { c.penalita=true; c.penTipo=nuovo; c.esito=null; }
+        // il totale resta quello dichiarato: la penalita' prende il posto di una scheda
+        if(!prima && c.penalita){
+          for(let k=colpi.length-1;k>=1;k--){
+            const x=colpi[k];
+            if(x.lie!=='green' && !x.bastone && (x.distM===null||x.distM===undefined) && (x.lie===null||x.lie===undefined) && k!==i){
+              colpi.splice(k,1); break;
+            }
+          }
+        } else if(prima && !c.penalita){
+          let insP=colpi.length; for(let k2=0;k2<colpi.length;k2++){ if(colpi[k2].lie==='green'){ insP=k2; break; } }
+          colpi.splice(insP,0,{lie:null,distM:null,bastone:null,penalita:false,penTipo:null,esito:null});
+        }
+        salvaBozza(); rerenderFermo();
+      };
+      card.appendChild(pg);
+    } else {
+      const di=el('<div><label>Distanza del putt (metri)</label>'+
+        '<input type="number" inputmode="decimal" step="0.1" value="'+(c.distM===null||c.distM===undefined?'':c.distM)+'" placeholder="es. 2,4">'+
+        '<div class="distchips">'+[0.5,1,1.5,2,3,5,8,12].map(v=>'<div class="chip'+(c.distM===v?' selected':'')+'" data-v="'+v+'">'+String(v).replace('.',',')+' m</div>').join('')+'</div>'+
+        (ultimo?'<div class="hint tight" style="margin-top:6px">La distanza da cui e’ partito il putt imbucato.</div>':'')+
+      '</div>');
+      di.querySelector('input').onchange=e=>{
+        c.distM=e.target.value===''?null:parseFloat(e.target.value);
+        salvaBozza(); rerenderFermo();
+      };
+      di.querySelector('.distchips').onclick=e=>{
+        const ch=e.target.closest('.chip'); if(!ch) return;
+        c.distM=parseFloat(ch.dataset.v); salvaBozza(); rerenderFermo();
+      };
+      card.appendChild(di);
+    }
+
+    /* --- griglia di atterraggio: dentro la scheda del colpo di cui parla --- */
+    if(IMP().esitoAttivo && !ultimo && !c.penalita){
+      const raggioNoto = next && next.distM>0;
+      const serve = next && (next.lie==='green' || (raggioNoto && next.distM<=ESITO_SOGLIA_M));
+      const attesa = next && next.lie!=='green' && !raggioNoto;
+      if(serve){
+        const eg=el('<div class="esitowrap" style="margin-top:12px">'+
+          '<label>Dov’e’ finita la palla, rispetto alla bandiera?</label>'+
+          '<div class="hint tight">'+(next.lie==='green'
+            ? 'E’ arrivata in green: il raggio e’ la distanza del putt successivo.'
+            : 'E’ finita a '+next.distM+' m dalla buca (la distanza della scheda dopo): il settore aggiunge la direzione.')+'</div>'+
+          '<div class="esitogrid">'+ESITI.map(x=>'<div class="esitocell'+(x.k==='P'?' centro':'')+(c.esito===x.k?' selected':'')+'" data-v="'+x.k+'">'+
+            (x.k==='P'?'<span class="fl">⛳</span>':'')+'<span>'+x.n+'</span></div>').join('')+'</div></div>');
+        eg.querySelector('.esitogrid').onclick=e=>{
+          const ch=e.target.closest('.esitocell'); if(!ch) return;
+          c.esito = c.esito===ch.dataset.v ? null : ch.dataset.v;
+          salvaBozza(); rerenderFermo();
+        };
+        card.appendChild(eg);
+      } else if(attesa){
+        card.appendChild(el('<div class="hint tight" style="margin-top:10px;opacity:.7">La griglia di atterraggio '+
+          'compare qui se la scheda successiva dira’ che la palla e’ finita entro '+ESITO_SOGLIA_M+' m dalla buca.</div>'));
+      }
+    }
+    body.appendChild(card);
+  });
+
+  /* --- salvataggio --- */
+  const isUlt = idx===bozza.numBuche-1;
+  const save=el('<button class="btn big">Salva la buca'+(isUlt?' · termina giro':' →')+'</button>');
+  save.onclick=()=>salvaBucaBatch(b, idx, true);
+  body.appendChild(save);
+  const racc=el('<button class="btn ghost">Buca non completata (raccolta o concessa)</button>');
+  racc.onclick=()=>{
+    if(!confirm('Segnare la buca come non completata?\n\nIl punteggio resta quello dei colpi registrati, ma la buca viene marcata e resta fuori dai calcoli che richiedono una buca chiusa.')) return;
+    salvaBucaBatch(b, idx, false);
+  };
+  body.appendChild(racc);
+  const cambia=el('<button class="btn ghost" style="opacity:.85">↺ Cambia risultato (rifa’ le schede)</button>');
+  cambia.onclick=()=>{
+    if(!confirm('Rifare le schede di questa buca? Quello che hai inserito qui andra’ perso.')) return;
+    b.dich=null; b.colpi=[]; salvaBozza(); render();
+  };
+  body.appendChild(cambia);
+
+  return {header:bozza.circolo, body};
 };
 
-/* --- montaggio della griglia di esito del colpo precedente --- */
-function montaEsito(form, b, prec, onSel){
-  const w=form.querySelector('#esitoWrap');
-  if(!w || !prec || prec.esito) return;
-  if(!IMP().esitoAttivo) return;
-  /* Il nome del colpo di cui si parla e' scritto per esteso: "quel colpo" senza
-     contesto era ambiguo, e l'ambiguita' in campo si paga in dati sbagliati. */
-  const nProg=b.colpi.length;
-  const ePutt = prec.lie==='green';
-  const nPutt = b.colpi.filter(x=>x.lie==='green').length;
-  const breve = ePutt ? 'putt '+nPutt : 'colpo '+nProg;
-  const nomePrec = ePutt
-    ? 'Il putt '+nPutt+' ('+prec.distM+' m)'
-    : 'Il colpo '+nProg+' ('+esc(prec.bastone||'')+' da '+prec.distM+' m)';
-  w.innerHTML='<div class="esitowrap" id="esitoBox" style="display:none">'+
-    '<div id="esParte">'+
-      '<label>'+nomePrec+' — dov’e’ finita la palla?</label>'+
-      '<div class="hint tight">Rispetto alla bandiera. La distanza qui sopra e’ il raggio: '+
-        'il settore aggiunge la direzione, e insieme dicono quanto e’ volata davvero la palla.</div>'+
-      '<div class="esitogrid" id="esGrid">'+
-        ESITI.map(e=>'<div class="esitocell'+(e.k==='P'?' centro':'')+'" data-v="'+e.k+'">'+
-          (e.k==='P'?'<span class="fl">⛳</span>':'')+'<span>'+e.n+'</span></div>').join('')+
-      '</div>'+
-    '</div>'+
-    '<div style="margin-top:12px" id="penParte"><label>Penalita’ sul '+breve+'?</label>'+
-      '<div class="grid3" id="penGrid">'+PENALITA_OPZ.map(p=>'<div class="chip small'+(p.k===''?' selected':'')+'" data-v="'+p.k+'">'+p.n+
-        (p.d?'<br><span style="font-size:10px;opacity:.75">'+p.d+'</span>':'')+'</div>').join('')+'</div></div>'+
-  '</div>';
-  const grid=w.querySelector('#esGrid');
-  grid.onclick=e=>{
-    const c=e.target.closest('.esitocell'); if(!c) return;
-    grid.querySelectorAll('.esitocell').forEach(x=>x.classList.remove('selected'));
-    c.classList.add('selected'); w.dataset.esito=c.dataset.v; onSel&&onSel(c.dataset.v);
-  };
-  const pg=w.querySelector('#penGrid');
-  pg.onclick=e=>{
-    const c=e.target.closest('.chip'); if(!c) return;
-    pg.querySelectorAll('.chip').forEach(x=>x.classList.remove('selected'));
-    c.classList.add('selected'); w.dataset.pen=c.dataset.v;
-  };
-  w.dataset.pen='';
-}
-function aggiornaEsitoVisibilita(form, b, prec, distanzaNuova){
-  const w=form.querySelector('#esitoWrap'); if(!w) return;
-  const box=w.querySelector('#esitoBox'); if(!box) return;
-  /* Quando la griglia serve:
-     - in fase di putting, SEMPRE: la palla e' ferma sul green, la posizione
-       rispetto alla bandiera si vede a occhio e non dipende da nessun numero
-     - in avvicinamento, quando la distanza inserita dice che il colpo precedente
-       e' finito entro la soglia (40 m): oltre, l'errore geometrico e' di secondo
-       ordine e la vecchia formula basta.
-     Il riquadro sta SOTTO il campo della distanza: compare dove stai guardando,
-     non alle tue spalle. */
-  const serve = prec && !prec.esito && IMP().esitoAttivo &&
-    (b.fase==='putting' || prec.lie==='green' ||
-     (distanzaNuova>0 && distanzaNuova<=ESITO_SOGLIA_M));
-  // la penalita' si puo' segnare sempre, anche quando il settore non serve
-  const soloPen = prec && !prec.esito && !serve;
-  box.style.display = (serve||soloPen) ? 'block' : 'none';
-  const es=box.querySelector('#esParte');
-  if(es) es.style.display = serve ? 'block' : 'none';
-}
-
-/* --- aggiunta di un colpo, con tutti i controlli --- */
-function aggiungiColpo(form, b, idx, o){
-  const w=form.querySelector('#esitoWrap');
-  const prec=b.colpi[b.colpi.length-1]||null;
-  const dv=form.querySelector('#dist').value;
-  const distM = dv===''?null:parseFloat(dv);
-  const lie = o.lie || (o.getLie?o.getLie():null);
-  const bastone = o.bastone || (o.getBast?o.getBast():null);
-
-  const av=controlliColpo({lie:lie, distM:distM, bastone:bastone, par:b.par,
-    colpi:b.colpi, distanzaBuca:b.distanza});
-  const box=form.querySelector('#avvBox');
-  box.innerHTML='';
-  const blocchi=av.filter(a=>a.liv==='blocco');
-  if(blocchi.length){ const bb=bloccoAvvisi(blocchi); if(bb) box.appendChild(bb); return; }
-  const bb=bloccoAvvisi(av); if(bb) box.appendChild(bb);
-  const conf=testoConferma(av);
-  if(conf && !confirm(conf)) return;
-
-  // esito e penalita' del colpo PRECEDENTE, raccolti adesso perche' adesso si sanno
-  if(prec && !prec.esito && w){
-    const es=w.dataset.esito||null;
-    const pt=w.dataset.pen||'';
-    const serve = b.fase==='putting' || prec.lie==='green' || (distM>0 && distM<=ESITO_SOGLIA_M);
-    /* Se c'e' una penalita', il settore non si chiede: la palla del drop non e'
-       quella del colpo, e la geometria della griglia non avrebbe senso. */
-    if(serve && IMP().esitoAttivo && !es && !pt){
-      if(!confirm('Non hai indicato dove e’ finita la palla del colpo '+b.colpi.length+'.\n\nSenza il settore, la distanza di quel bastone viene calcolata con la vecchia formula, che sottostima ogni palla finita oltre la bandiera o di lato.\n\nProseguire lo stesso?')) return;
-    }
-    if(es && !pt) prec.esito=es;
-    if(pt){ prec.penalita=true; prec.penTipo=pt; }
+/* --- validazione e salvataggio della buca compilata a schede --- */
+function salvaBucaBatch(b, idx, completata){
+  const colpi=b.colpi;
+  // 1. completezza, scheda per scheda
+  const manca=[];
+  colpi.forEach((c,i)=>{
+    const n=i+1, putt=c.lie==='green';
+    const nome = putt ? ('putt '+colpi.slice(0,i+1).filter(x=>x.lie==='green').length) : ('colpo '+n);
+    if(!putt && !c.lie) manca.push(nome+': manca il lie');
+    if(c.distM===null || c.distM===undefined || isNaN(c.distM)) manca.push(nome+': manca la distanza');
+    if(!putt && !c.bastone) manca.push(nome+': manca il bastone');
+  });
+  if(manca.length){
+    alert('Prima di salvare completa le schede:\n\n• '+manca.join('\n• '));
+    return;
   }
-
-  b.colpi.push({lie:lie, distM:distM, bastone:bastone, penalita:false, penTipo:null, esito:null});
-  if(lie==='green') b.fase='putting';
-  salvaBozza(); render();
+  // 2. controlli di plausibilita', colpo per colpo, come nell'inserimento uno a uno
+  let avvisi=[], blocchi=[];
+  colpi.forEach((c,i)=>{
+    const av=controlliColpo({lie:c.lie, distM:c.distM, bastone:c.bastone, par:b.par,
+      colpi:colpi.slice(0,i), distanzaBuca:b.distanza});
+    av.forEach(a=>{
+      const riga={liv:a.liv, txt:'Colpo '+(i+1)+' — '+a.txt};
+      if(a.liv==='blocco') blocchi.push(riga); else avvisi.push(riga);
+    });
+  });
+  if(blocchi.length){
+    alert('Ci sono dati impossibili da salvare cosi’:\n\n• '+blocchi.map(x=>x.txt).join('\n• '));
+    return;
+  }
+  // 3. settori mancanti dove servivano — una domanda sola, non una per colpo
+  if(IMP().esitoAttivo){
+    const senza=[];
+    colpi.forEach((c,i)=>{
+      const next=colpi[i+1]||null;
+      if(!next || c.penalita || c.esito) return;
+      if(next.lie==='green' || (next.distM>0 && next.distM<=ESITO_SOGLIA_M)) senza.push(i+1);
+    });
+    if(senza.length){
+      if(!confirm('Manca la griglia di atterraggio su '+(senza.length===1?'una scheda':senza.length+' schede')+
+        ' (colpo '+senza.join(', ')+').\n\nSenza il settore, la distanza di quei bastoni si calcola con la vecchia formula, che sottostima le palle finite oltre la bandiera o di lato.\n\nSalvare lo stesso?')) return;
+    }
+  }
+  // 4. i controlli sulla buca intera, e poi la strada gia' collaudata
+  const conf=testoConferma(avvisi);
+  if(conf && !confirm(conf)) return;
+  chiudiBuca(b, idx, completata);
 }
 
 /* --- chiusura della buca --- */
