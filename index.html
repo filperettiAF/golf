@@ -2886,12 +2886,12 @@ VIEWS.buca = function(){
   if(putting){
     const form=el('<div class="card"><h2>Putt '+(b.colpi.filter(x=>x.lie==='green').length+1)+'</h2>'+
       '<div class="puttflag">Sei in green. Il bastone e’ il putter e non serve sceglierlo.</div>'+
-      '<div id="esitoWrap"></div>'+
       '<label>Distanza dalla buca (metri)</label>'+
       '<input type="number" inputmode="decimal" step="0.1" id="dist" placeholder="es. 2,4">'+
       '<div class="distchips" id="dchip">'+
         [0.5,1,1.5,2,3,5,8,12].map(v=>'<div class="chip" data-v="'+v+'">'+String(v).replace('.',',')+' m</div>').join('')+
       '</div>'+
+      '<div id="esitoWrap"></div>'+
       '<div id="avvBox"></div>'+
       '<button class="btn" style="margin-top:14px;" id="add">Aggiungi putt</button>'+
       '<button class="btn ghost" style="margin-top:2px" id="esci">La palla non e’ in green</button>'+
@@ -2919,12 +2919,12 @@ VIEWS.buca = function(){
     const distDefault = nShot===1 && b.distanza ? b.distanza : '';
     const form=el('<div class="card"><h2>Colpo '+nShot+'</h2>'+
       '<div class="hint">Inserisci <b>prima di tirare</b>: dove si trova la palla, quanto manca alla buca, che bastone usi.</div>'+
-      '<div id="esitoWrap"></div>'+
       '<label>Lie</label>'+
       '<div class="grid3" id="lieGrid">'+lieOpz.map(l=>'<div class="chip'+(l.k===lieDefault?' selected':'')+'" data-v="'+l.k+'">'+l.n+'</div>').join('')+'</div>'+
       '<div class="hint tight" id="lieAiuto" style="margin-top:6px">'+(lieDefault?esc(LIE_AIUTO[lieDefault]):'Tocca il lie per vederne la definizione.')+'</div>'+
       '<label style="margin-top:12px;">Distanza dalla buca (metri)</label>'+
       '<input type="number" inputmode="decimal" step="0.1" id="dist" value="'+distDefault+'" placeholder="es. 145">'+
+      '<div id="esitoWrap"></div>'+
       '<label style="margin-top:12px;">Bastone</label>'+
       '<div class="grid3" id="bastGrid">'+bastoni.filter(x=>x!=='Putter').map(x=>'<div class="chip" data-v="'+esc(x)+'">'+esc(x)+'</div>').join('')+
         '<div class="chip" data-v="Putter">Putter</div></div>'+
@@ -2976,16 +2976,26 @@ function montaEsito(form, b, prec, onSel){
   const w=form.querySelector('#esitoWrap');
   if(!w || !prec || prec.esito) return;
   if(!IMP().esitoAttivo) return;
+  /* Il nome del colpo di cui si parla e' scritto per esteso: "quel colpo" senza
+     contesto era ambiguo, e l'ambiguita' in campo si paga in dati sbagliati. */
   const nProg=b.colpi.length;
+  const ePutt = prec.lie==='green';
+  const nPutt = b.colpi.filter(x=>x.lie==='green').length;
+  const breve = ePutt ? 'putt '+nPutt : 'colpo '+nProg;
+  const nomePrec = ePutt
+    ? 'Il putt '+nPutt+' ('+prec.distM+' m)'
+    : 'Il colpo '+nProg+' ('+esc(prec.bastone||'')+' da '+prec.distM+' m)';
   w.innerHTML='<div class="esitowrap" id="esitoBox" style="display:none">'+
-    '<label>Dov’e’ finita la palla del colpo '+nProg+'?</label>'+
-    '<div class="hint tight">Rispetto alla bandiera. La distanza che inserisci sotto e’ il raggio: '+
-      'il settore aggiunge la direzione, e insieme dicono quanto e’ volata davvero la palla.</div>'+
-    '<div class="esitogrid" id="esGrid">'+
-      ESITI.map(e=>'<div class="esitocell'+(e.k==='P'?' centro':'')+'" data-v="'+e.k+'">'+
-        (e.k==='P'?'<span class="fl">⛳</span>':'')+'<span>'+e.n+'</span></div>').join('')+
+    '<div id="esParte">'+
+      '<label>'+nomePrec+' — dov’e’ finita la palla?</label>'+
+      '<div class="hint tight">Rispetto alla bandiera. La distanza qui sopra e’ il raggio: '+
+        'il settore aggiunge la direzione, e insieme dicono quanto e’ volata davvero la palla.</div>'+
+      '<div class="esitogrid" id="esGrid">'+
+        ESITI.map(e=>'<div class="esitocell'+(e.k==='P'?' centro':'')+'" data-v="'+e.k+'">'+
+          (e.k==='P'?'<span class="fl">⛳</span>':'')+'<span>'+e.n+'</span></div>').join('')+
+      '</div>'+
     '</div>'+
-    '<div style="margin-top:12px"><label>Penalita’ su quel colpo?</label>'+
+    '<div style="margin-top:12px" id="penParte"><label>Penalita’ sul '+breve+'?</label>'+
       '<div class="grid3" id="penGrid">'+PENALITA_OPZ.map(p=>'<div class="chip small'+(p.k===''?' selected':'')+'" data-v="'+p.k+'">'+p.n+
         (p.d?'<br><span style="font-size:10px;opacity:.75">'+p.d+'</span>':'')+'</div>').join('')+'</div></div>'+
   '</div>';
@@ -3006,17 +3016,22 @@ function montaEsito(form, b, prec, onSel){
 function aggiornaEsitoVisibilita(form, b, prec, distanzaNuova){
   const w=form.querySelector('#esitoWrap'); if(!w) return;
   const box=w.querySelector('#esitoBox'); if(!box) return;
+  /* Quando la griglia serve:
+     - in fase di putting, SEMPRE: la palla e' ferma sul green, la posizione
+       rispetto alla bandiera si vede a occhio e non dipende da nessun numero
+     - in avvicinamento, quando la distanza inserita dice che il colpo precedente
+       e' finito entro la soglia (40 m): oltre, l'errore geometrico e' di secondo
+       ordine e la vecchia formula basta.
+     Il riquadro sta SOTTO il campo della distanza: compare dove stai guardando,
+     non alle tue spalle. */
   const serve = prec && !prec.esito && IMP().esitoAttivo &&
-    (prec.lie==='green' || (distanzaNuova>0 && distanzaNuova<=ESITO_SOGLIA_M));
+    (b.fase==='putting' || prec.lie==='green' ||
+     (distanzaNuova>0 && distanzaNuova<=ESITO_SOGLIA_M));
   // la penalita' si puo' segnare sempre, anche quando il settore non serve
   const soloPen = prec && !prec.esito && !serve;
   box.style.display = (serve||soloPen) ? 'block' : 'none';
-  const g=box.querySelector('#esGrid');
-  const lab=box.querySelector('label');
-  if(g) g.style.display = serve ? 'grid' : 'none';
-  if(lab) lab.style.display = serve ? 'block' : 'none';
-  const hint=box.querySelector('.hint');
-  if(hint) hint.style.display = serve ? 'block' : 'none';
+  const es=box.querySelector('#esParte');
+  if(es) es.style.display = serve ? 'block' : 'none';
 }
 
 /* --- aggiunta di un colpo, con tutti i controlli --- */
@@ -3041,12 +3056,14 @@ function aggiungiColpo(form, b, idx, o){
   // esito e penalita' del colpo PRECEDENTE, raccolti adesso perche' adesso si sanno
   if(prec && !prec.esito && w){
     const es=w.dataset.esito||null;
-    const serve = prec.lie==='green' || (distM>0 && distM<=ESITO_SOGLIA_M);
-    if(serve && IMP().esitoAttivo && !es){
+    const pt=w.dataset.pen||'';
+    const serve = b.fase==='putting' || prec.lie==='green' || (distM>0 && distM<=ESITO_SOGLIA_M);
+    /* Se c'e' una penalita', il settore non si chiede: la palla del drop non e'
+       quella del colpo, e la geometria della griglia non avrebbe senso. */
+    if(serve && IMP().esitoAttivo && !es && !pt){
       if(!confirm('Non hai indicato dove e’ finita la palla del colpo '+b.colpi.length+'.\n\nSenza il settore, la distanza di quel bastone viene calcolata con la vecchia formula, che sottostima ogni palla finita oltre la bandiera o di lato.\n\nProseguire lo stesso?')) return;
     }
-    if(es) prec.esito=es;
-    const pt=w.dataset.pen||'';
+    if(es && !pt) prec.esito=es;
     if(pt){ prec.penalita=true; prec.penTipo=pt; }
   }
 
