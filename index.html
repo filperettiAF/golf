@@ -1,0 +1,2424 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Registra Giro">
+<meta name="theme-color" content="#0f5132">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+<title>Registra Giro — HCP+Stat</title>
+<style>
+  :root{
+    --verde:#0f5132; --verde-chiaro:#1a7a4a; --verde-testo:#0f5132;
+    --bg:#f4f6f5; --card:#ffffff;
+    --testo:#1c2621; --grigio:#6b7a72; --bordo:#dfe6e2; --rosso:#b3261e; --ambra:#8a6d00;
+    --safe-top:env(safe-area-inset-top); --safe-bottom:env(safe-area-inset-bottom);
+    --dv-blue:#2a78d6; --dv-orange:#eb6834; --dv-aqua:#1baf7a;
+    --dv-red:#e34948; --dv-neutral:#b8b7ae; --dv-track:#e6e9e7; --dv-good:#0a7d3c;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --verde:#1a7a4a; --verde-chiaro:#25a163; --verde-testo:#4ecf92;
+      --bg:#0d0d0d; --card:#1a1a19;
+      --testo:#ffffff; --grigio:#9c9c94; --bordo:#2c2c2a; --rosso:#ff8a80; --ambra:#e0b53a;
+      --dv-blue:#3987e5; --dv-orange:#d95926; --dv-aqua:#199e70;
+      --dv-red:#e66767; --dv-neutral:#4a4a46; --dv-track:#262625; --dv-good:#0ca30c;
+    }
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; height:100%; background:var(--bg); color:var(--testo);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif; overscroll-behavior:none;}
+  body{padding-top:var(--safe-top); padding-bottom:var(--safe-bottom); user-select:none;}
+  #app{min-height:100%; display:flex; flex-direction:column;}
+  header.topbar{position:sticky; top:0; z-index:20; background:var(--verde); color:#fff;
+    display:flex; align-items:center; gap:8px; padding:14px 12px; padding-top:calc(14px + var(--safe-top)); margin-top:calc(-1 * var(--safe-top));}
+  header.topbar h1{font-size:17px; margin:0; flex:1; font-weight:600; text-align:center; padding-right:34px;}
+  .backbtn{background:none; border:none; color:#fff; font-size:22px; padding:4px 8px; line-height:1;}
+  main{flex:1; padding:14px 14px 40px 14px; max-width:520px; margin:0 auto; width:100%;}
+  .card{background:var(--card); border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.06); border:1px solid var(--bordo);}
+  .card h2{font-size:15px; margin:0 0 10px 0; color:var(--verde-testo); text-transform:uppercase; letter-spacing:.03em;}
+  .row{display:flex; gap:10px; margin-bottom:10px;}
+  .row > *{flex:1;}
+  label{display:block; font-size:13px; color:var(--grigio); margin-bottom:4px; font-weight:600;}
+  input[type=text], input[type=date], input[type=number], input[type=password], select{
+    width:100%; padding:12px 10px; font-size:16px; border-radius:10px; border:1.5px solid var(--bordo);
+    background:#fff; color:var(--testo);}
+  input:focus, select:focus{outline:2px solid var(--verde-chiaro); border-color:var(--verde-chiaro);}
+  .btn{display:block; width:100%; padding:16px; font-size:16px; font-weight:700; border:none; border-radius:14px;
+    background:var(--verde); color:#fff; margin-bottom:10px; cursor:pointer;}
+  .btn:active{background:var(--verde-chiaro);}
+  .btn.secondary{background:#e9efec; color:var(--verde-testo);}
+  .btn.ghost{background:transparent; color:var(--verde-testo); border:1.5px solid var(--verde); padding:12px;}
+  .btn.danger{background:#fbe9e7; color:var(--rosso);}
+  .btn.big{padding:18px; font-size:17px;}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+  .grid2{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
+  .chip{padding:14px 6px; font-size:14px; font-weight:600; text-align:center; border-radius:12px;
+    background:#eef2f0; color:var(--testo); border:1.5px solid transparent;}
+  .chip.selected{background:var(--verde); color:#fff; border-color:var(--verde);}
+  .toggle2{display:flex; border-radius:12px; overflow:hidden; border:1.5px solid var(--verde);}
+  .toggle2 button{flex:1; padding:14px; border:none; background:#fff; color:var(--verde-testo); font-weight:700; font-size:15px;}
+  .toggle2 button.on{background:var(--verde); color:#fff;}
+  .hint{font-size:12px; color:var(--grigio); margin-top:-4px; margin-bottom:10px; line-height:1.45;}
+  .listitem{display:flex; justify-content:space-between; align-items:center; padding:14px 4px; border-bottom:1px solid var(--bordo);}
+  .listitem:last-child{border-bottom:none;}
+  .listitem .meta{font-size:12px; color:var(--grigio);}
+  .badge{font-size:11px; font-weight:700; padding:3px 8px; border-radius:8px; background:#e9efec; color:var(--verde-testo);}
+  .badge.warn{background:#fff4cc; color:var(--ambra);}
+  .badge.bozza{background:#fde8e8; color:var(--rosso);}
+  .holeprog{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;}
+  .holeprog .n{font-size:32px; font-weight:800; color:var(--verde-testo); line-height:1;}
+  .holeprog .par{font-size:13px; color:var(--grigio); text-align:right; line-height:1.5;}
+  .shot{font-size:12.5px; padding:9px 10px; background:#eef2f0; border-radius:10px; margin-bottom:6px;
+    display:flex; justify-content:space-between; gap:8px; align-items:center;}
+  .shot .sgv{font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .empty{text-align:center; color:var(--grigio); padding:30px 10px; font-size:14px;}
+  .installtip{font-size:12.5px; color:var(--grigio); background:#eef2f0; border-radius:12px; padding:12px; margin-bottom:14px; line-height:1.5;}
+  .filters{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;}
+  .filters .full{grid-column:1 / -1;}
+  .filters select{padding:10px 8px; font-size:14px;}
+  .filters label{font-size:11px;}
+  .kpigrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;}
+  .kpi{background:var(--card); border:1px solid var(--bordo); border-radius:14px; padding:12px;}
+  .kpi .lab{font-size:10.5px; color:var(--grigio); text-transform:uppercase; letter-spacing:.03em; margin-bottom:5px; line-height:1.3; min-height:26px;}
+  .kpi .v{font-size:25px; font-weight:800; color:var(--testo); line-height:1.1;}
+  .kpi .u{font-size:12px; font-weight:600; color:var(--grigio);}
+  .kpi .sub{font-size:11px; color:var(--grigio); margin-top:3px; line-height:1.3;}
+  .legend{display:flex; flex-wrap:wrap; gap:12px; font-size:12px; color:var(--grigio); margin-bottom:10px;}
+  .legend .it{display:flex; align-items:center; gap:5px;}
+  .sw{width:10px; height:10px; border-radius:3px; display:inline-block; flex:none;}
+  .dvrow{display:grid; grid-template-columns:84px 1fr 44px; align-items:center; gap:8px; margin-bottom:7px;}
+  .dvrow .d{font-size:11.5px; color:var(--grigio);}
+  .dvtrack{position:relative; height:20px; background:var(--dv-track); border-radius:5px;}
+  .dvtrack .zero{position:absolute; left:50%; top:0; bottom:0; width:1px; background:var(--bordo);}
+  .dvbar{position:absolute; top:2px; bottom:2px; border-radius:4px; min-width:3px;}
+  .dvrow .n{font-size:12.5px; font-weight:700; text-align:right; font-variant-numeric:tabular-nums;}
+  .stblock{margin-bottom:13px;}
+  .stbhead{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;}
+  .stbhead .d{font-size:12.5px; color:var(--grigio);}
+  .stbhead .n{font-size:13px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .stcap{font-size:11px; color:var(--grigio); margin-top:4px; line-height:1.4;}
+  .strack{display:flex; height:20px; border-radius:5px; overflow:hidden; background:var(--dv-track);}
+  .sseg{height:100%; min-width:0;}
+  .sseg + .sseg{margin-left:2px;}
+  .hbrow{display:grid; grid-template-columns:76px 1fr 30px; align-items:center; gap:8px; margin-bottom:7px;}
+  .hbrow.wide{grid-template-columns:104px 1fr 36px;}
+  .hbrow .l{font-size:12px; color:var(--grigio);}
+  .hbrow.wide .l{font-size:11.5px; white-space:nowrap;}
+  .hbtrack{height:15px; background:var(--dv-track); border-radius:4px; overflow:hidden;}
+  .hbfill{height:100%; background:var(--dv-blue); border-radius:4px;}
+  .hbrow .n{font-size:12px; font-weight:700; text-align:right; font-variant-numeric:tabular-nums;}
+  table.stat{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.stat th, table.stat td{padding:7px 5px; border-bottom:1px solid var(--bordo); text-align:left;}
+  table.stat tr:last-child td{border-bottom:none;}
+  table.stat th{font-size:10px; color:var(--grigio); text-transform:uppercase; letter-spacing:.02em; font-weight:700;}
+  table.stat td.n, table.stat th.n{text-align:right; font-variant-numeric:tabular-nums;}
+  .pos{color:var(--dv-good);} .neg{color:var(--dv-red);}
+  .tabbar{position:sticky; top:52px; z-index:15; display:grid; grid-template-columns:repeat(4,1fr);
+    gap:4px; background:var(--bg); padding:8px 0 10px 0; margin-bottom:2px;}
+  .tabbar button{padding:11px 2px; font-size:11px; font-weight:700; border:1.5px solid var(--bordo);
+    border-radius:11px; background:var(--card); color:var(--grigio); line-height:1.2;}
+  .tabbar button.on{background:var(--verde); color:#fff; border-color:var(--verde);}
+  .pager{display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch; scrollbar-width:none; transition:height .18s ease;}
+  .pager::-webkit-scrollbar{display:none;}
+  .pane{flex:0 0 100%; scroll-snap-align:start; align-self:flex-start; padding-bottom:4px;}
+  .chart{width:100%; height:auto; display:block; overflow:visible;}
+  .chart .lin{fill:none; stroke-width:2; stroke-linejoin:round; stroke-linecap:round;}
+  .chart .pt{stroke:var(--card); stroke-width:2;}
+  .chart .zero{stroke:var(--baseline,#c3c2b7); stroke-width:1; stroke-dasharray:3 3;}
+  .chart text{font-size:9px; fill:var(--grigio); font-family:inherit;}
+  .chart text.val{font-size:10px; font-weight:700;}
+  .smgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .smbox{border:1px solid var(--bordo); border-radius:11px; padding:8px 6px 4px 6px;}
+  .smbox .t{font-size:10.5px; color:var(--grigio); font-weight:700; text-transform:uppercase;
+    letter-spacing:.02em; margin:0 0 2px 4px;}
+  .rngrow{display:grid; grid-template-columns:70px 1fr 62px; align-items:center; gap:8px; margin-bottom:8px;}
+  .rngrow .l{font-size:12px; color:var(--grigio);}
+  .rngtrack{position:relative; height:16px;}
+  .rngline{position:absolute; top:7px; height:3px; border-radius:2px; background:var(--dv-track);}
+  .rngspan{position:absolute; top:6px; height:5px; border-radius:3px; background:var(--dv-blue); opacity:.35;}
+  .rngdot{position:absolute; top:3px; width:10px; height:10px; border-radius:50%;
+    background:var(--dv-blue); border:2px solid var(--card); margin-left:-5px;}
+  .rngrow .n{font-size:11.5px; font-weight:700; text-align:right; font-variant-numeric:tabular-nums;}
+  .metodo{font-size:12px; line-height:1.55; color:var(--grigio);}
+  .metodo b{color:var(--testo);}
+  .syncline{display:flex; align-items:center; gap:8px; font-size:12.5px; padding:11px 12px;
+    border-radius:12px; background:#eef2f0; margin-bottom:14px; line-height:1.4; cursor:pointer;}
+  .syncline .pallino{width:9px; height:9px; border-radius:50%; flex:none;}
+  .syncline .frecc{margin-left:auto; color:var(--grigio); font-size:16px; flex:none;}
+  .metodo code{font-size:11px; background:#eef2f0; padding:1px 4px; border-radius:4px;}
+  @media (prefers-color-scheme: dark){
+    input[type=text], input[type=date], input[type=number], input[type=password], select{
+      background:#232322; color:#fff; border-color:#3a3a37;}
+    .chip{background:#232322; color:#fff;}
+    .btn.secondary{background:#22302a; color:var(--verde-testo);}
+    .btn.danger{background:#3a1f1d; color:#ff8a80;}
+    .toggle2 button{background:#1a1a19; color:var(--verde-testo);}
+    .badge{background:#22302a; color:var(--verde-testo);}
+    .badge.warn{background:#3a3218; color:#e0b53a;}
+    .badge.bozza{background:#3a1f1d; color:#ff8a80;}
+    .shot{background:#232322;}
+    .installtip{background:#232322;}
+    .syncline{background:#232322;}
+    .metodo code{background:#232322;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* Componente offline: attivo solo quando l'app sta su un indirizzo web.
+   Aperta come file locale questa riga non fa nulla e non da errore. */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+  });
+}
+
+/* ==========================================================
+   ARCHIVIO CAMPI — dati ufficiali verificati
+   ========================================================== */
+const ARCHIVIO_DEFAULT = {
+  "Colline del Gavi (Champion)": {
+    fonte: "Carta ufficiale del circolo su GES Golf (circolo_id 732), totale confermato da FederGolf Piemonte (6380 m).",
+    par: [5,4,4,3,5,4,5,3,4, 4,4,3,5,3,4,4,4,5],
+    si:  [15,5,11,17,9,1,7,13,3, 2,14,12,6,18,16,4,10,8],
+    tees: {
+      "Bianco":  {d:[445,360,340,171,470,390,469,165,386, 400,340,178,500,150,367,425,362,462], cr:74.2, sr:139},
+      "Giallo":  {d:[440,351,332,165,450,360,439,165,376, 390,314,170,465,140,357,405,352,437], cr:73.2, sr:136},
+      "Blu":     {d:[392,327,314,140,418,335,410,155,350, 356,294,157,455,130,320,380,336,403], cr:77.3, sr:140},
+      "Verde":   {d:[394,323,310,147,410,332,400,150,350, 350,278,154,425,125,320,375,329,403], cr:70.5, sr:130},
+      "Rosso":   {d:[379,319,301,138,396,332,373,150,338, 337,278,150,425,118,312,364,314,387], cr:75.4, sr:136},
+      "Arancio": {d:[352,292,289,120,388,298,342,128,300, 306,248,130,401,105,292,340,289,365], cr:72.8, sr:131}
+    }
+  },
+  "Des Iles Borromées": {
+    fonte: "Carta ufficiale del circolo su GES Golf (circolo_id 480). Sostituisce i dati precedenti: quello che era registrato come Giallo era in realtà il Blu.",
+    par: [4,4,5,4,3,5,5,3,4, 3,4,4,4,3,5,4,3,5],
+    si:  [5,9,13,1,3,15,17,11,7, 10,12,4,16,6,18,2,8,14],
+    tees: {
+      "Bianco":  {d:[360,340,495,375,185,505,470,155,330, 177,350,395,330,150,445,405,175,480], cr:72.2, sr:135},
+      "Giallo":  {d:[328,316,466,345,170,474,422,142,307, 163,334,381,309,141,428,379,150,440], cr:70.5, sr:132},
+      "Blu":     {d:[317,305,417,339,163,445,414,136,300, 150,300,344,294,132,405,354,145,428], cr:73.9, sr:131},
+      "Verde":   {d:[297,301,418,320,145,419,370,103,281, 134,290,334,278,122,380,346,139,389], cr:67.4, sr:125},
+      "Rosso":   {d:[303,298,409,300,139,437,364,120,269, 130,283,337,282,117,385,336,136,393], cr:72.4, sr:129},
+      "Arancio": {d:[244,251,370,280,129,404,348,92,242, 115,176,308,234,92,356,326,123,361], cr:68.8, sr:122}
+    }
+  }
+};
+const BASTONI_DEFAULT = ["Driver","Legno 3","Ferro 3","Ferro 4","Ferro 5","Ferro 6","Ferro 7",
+  "Ferro 8","Ferro 9","PW","48°","51°","56°","Putter"];
+const LIE_OPZ = [
+  {k:'tee', n:'Tee'}, {k:'fairway', n:'Fairway'}, {k:'rough', n:'Rough'},
+  {k:'sabbia', n:'Sabbia'}, {k:'recupero', n:'Recupero'}, {k:'green', n:'Green'}
+];
+const LIE_NOME = {tee:'Tee', fairway:'Fairway', rough:'Rough', sabbia:'Sabbia', recupero:'Recupero', green:'Green'};
+
+/* ==========================================================
+   MOTORE STROKES GAINED
+   Baseline PGA Tour: Broadie, M. "Assessing Golfer Performance on the
+   PGA TOUR", Interfaces 42(2):146-165, 2012, Table B.1 (yard).
+   Putting Tour: Broadie, M. "Putts Gained", 2011, Figura 1 (piedi).
+   Baseline scratch: RICOSTRUZIONE — vedi la scheda "Metodo e fonti".
+   ========================================================== */
+const M_TO_YD = 1.093613, M_TO_FT = 3.280840;
+const TOUR_LONG = {
+  tee: {100:2.92,120:2.99,140:2.97,160:2.99,180:3.05,200:3.12,220:3.17,240:3.25,260:3.45,
+        280:3.65,300:3.71,320:3.79,340:3.86,360:3.92,380:3.96,400:3.99,420:4.02,440:4.08,
+        460:4.17,480:4.28,500:4.41,520:4.54,540:4.65,560:4.74,580:4.79,600:4.82},
+  fairway: {10:2.18,20:2.40,30:2.52,40:2.60,50:2.66,60:2.70,70:2.72,80:2.75,90:2.77,100:2.80,
+        120:2.85,140:2.91,160:2.98,180:3.08,200:3.19,220:3.32,240:3.45,260:3.58,280:3.69,
+        300:3.78,320:3.84,340:3.88,360:3.95,380:4.03,400:4.11,420:4.19,440:4.27,460:4.34,
+        480:4.42,500:4.50,520:4.58,540:4.66,560:4.74,580:4.82,600:4.89},
+  rough: {10:2.34,20:2.59,30:2.70,40:2.78,50:2.87,60:2.91,70:2.93,80:2.96,90:2.99,100:3.02,
+        120:3.08,140:3.15,160:3.23,180:3.31,200:3.42,220:3.53,240:3.64,260:3.74,280:3.83,
+        300:3.90,320:3.95,340:4.02,360:4.11,380:4.21,400:4.30,420:4.40,440:4.49,460:4.58,
+        480:4.68,500:4.77,520:4.87,540:4.96,560:5.06,580:5.15,600:5.25},
+  sabbia: {10:2.43,20:2.53,30:2.66,40:2.82,50:2.92,60:3.15,70:3.21,80:3.24,90:3.24,100:3.23,
+        120:3.21,140:3.22,160:3.28,180:3.40,200:3.55,220:3.70,240:3.84,260:3.93,280:4.00,
+        300:4.04,320:4.12,340:4.26,360:4.41,380:4.55,400:4.69,420:4.83,440:4.97,460:5.11,
+        480:5.25,500:5.40,520:5.54,540:5.68,560:5.82,580:5.96,600:6.10},
+  recupero: {10:3.45,20:3.51,30:3.57,40:3.71,50:3.79,60:3.83,70:3.84,80:3.84,90:3.82,100:3.80,
+        120:3.78,140:3.80,160:3.81,180:3.82,200:3.87,220:3.92,240:3.97,260:4.03,280:4.10,
+        300:4.20,320:4.31,340:4.44,360:4.56,380:4.66,400:4.75,420:4.84,440:4.94,460:5.03,
+        480:5.13,500:5.22,520:5.32,540:5.41,560:5.51,580:5.60,600:5.70}
+};
+const TOUR_PUTT = {1:1.001,2:1.01,3:1.05,4:1.14,5:1.24,6:1.34,7:1.43,8:1.50,9:1.56,10:1.61,
+  15:1.78,20:1.87,30:1.98,40:2.06,50:2.14,60:2.21,90:2.36};
+const SCRATCH_MAKE = {1:0.99,1.5:0.98,4.5:0.76,7.5:0.49,10.5:0.34,15:0.19,21:0.12,27:0.07,
+  35:0.04,50:0.02,60:0.015,90:0.01};
+const K_SCRATCH = 1.1478;
+
+function interp(table, x){
+  const keys = Object.keys(table).map(Number).sort((a,b)=>a-b);
+  if(x <= keys[0]) return table[keys[0]];
+  if(x >= keys[keys.length-1]) return table[keys[keys.length-1]];
+  for(let i=0;i<keys.length-1;i++){
+    if(x >= keys[i] && x <= keys[i+1]){
+      const t=(x-keys[i])/(keys[i+1]-keys[i]);
+      return table[keys[i]] + t*(table[keys[i+1]]-table[keys[i]]);
+    }
+  }
+  return table[keys[keys.length-1]];
+}
+function scratchPutt(ft){
+  if(ft<=0) return 0;
+  const p3 = ft<=14 ? 0 : 0.00636*(ft-14);
+  return Math.max(1.0, 2 - interp(SCRATCH_MAKE, ft) + p3);
+}
+function longExtrap(tbl, yd){
+  if(yd>=10) return interp(tbl, yd);
+  return 2.0 + (tbl[10]-2.0)*(yd/10);
+}
+function colpiAttesi(lie, distM, baseline){
+  if(distM<=0) return 0;
+  if(lie==='green'){
+    const ft = distM*M_TO_FT;
+    return baseline==='scratch' ? scratchPutt(ft) : interp(TOUR_PUTT, ft);
+  }
+  const yd = distM*M_TO_YD;
+  let tbl;
+  if(lie==='tee') tbl = yd>=100 ? TOUR_LONG.tee : TOUR_LONG.fairway;
+  else tbl = TOUR_LONG[lie] || TOUR_LONG.fairway;
+  const tour = longExtrap(tbl, yd);
+  return baseline==='scratch' ? 2 + K_SCRATCH*(tour-2) : tour;
+}
+function categoriaColpo(lie, distM, par){
+  if(lie==='green') return 'putting';
+  if(lie==='tee' && par>=4) return 'tee';
+  if(distM*M_TO_YD <= 30) return 'corto';
+  return 'approccio';
+}
+const CAT_NOME = {tee:'Colpo dal tee', approccio:'Approccio', corto:'Gioco corto', putting:'Putting'};
+
+/* ==========================================================
+   STORAGE
+   ========================================================== */
+/* Archiviazione a strati:
+   1. memoria      — tutte le viste leggono da qui, in modo sincrono
+   2. localStorage — scrittura immediata, sopravvive alla chiusura dell'app
+   3. IndexedDB    — copia più capiente e resistente, scritta con un ritardo di 400 ms
+   4. snapshot     — le ultime 8 versioni complete dell'archivio, per recuperare
+                     da una cancellazione accidentale o da una scrittura corrotta
+   Nessuno di questi strati protegge dalla perdita del telefono: per quello
+   serve il backup su file (scheda "Backup e ripristino"). */
+const SCHEMA_VERSION = 5;
+const CHIAVI = ['hcp_archivio_v3','hcp_bastoni_v2','hcp_giri','hcp_giri_archiviati','hcp_bozza_v3','hcp_meta','hcp_impostazioni','hcp_sync','hcp_giri_cancellati'];
+let _mem = {}, _idb = null, _idbTimer = null, _idbPending = {};
+
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    if(!window.indexedDB) return rej(new Error('IndexedDB non disponibile'));
+    const rq = indexedDB.open('hcpstat', 1);
+    rq.onupgradeneeded = ()=>{ const db=rq.result; if(!db.objectStoreNames.contains('kv')) db.createObjectStore('kv'); };
+    rq.onsuccess = ()=>res(rq.result);
+    rq.onerror = ()=>rej(rq.error);
+  });
+}
+function idbGet(db,k){
+  return new Promise(res=>{ try{ const r=db.transaction('kv','readonly').objectStore('kv').get(k);
+    r.onsuccess=()=>res(r.result); r.onerror=()=>res(undefined); }catch(e){ res(undefined); } });
+}
+function idbPut(db,k,v){
+  return new Promise(res=>{ try{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k);
+    t.oncomplete=()=>res(true); t.onerror=()=>res(false); }catch(e){ res(false); } });
+}
+function idbFlush(){
+  if(!_idb) return;
+  const da = _idbPending; _idbPending = {};
+  Object.keys(da).forEach(k=>idbPut(_idb, k, da[k]));
+}
+const LS = {
+  get(k,d){ return (k in _mem && _mem[k]!==undefined && _mem[k]!==null) ? _mem[k] : (k in _mem ? _mem[k] : d); },
+  set(k,v){
+    _mem[k]=v;
+    try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ /* quota piena: resta IndexedDB */ }
+    _idbPending[k]=v;
+    clearTimeout(_idbTimer); _idbTimer=setTimeout(idbFlush, 400);
+  }
+};
+
+async function snapshotSalva(etichetta){
+  if(!_idb) return;
+  try{
+    const snaps = (await idbGet(_idb,'snapshots')) || [];
+    snaps.push({ts:Date.now(), etichetta:etichetta||null, giri:_mem['hcp_giri']||[]});
+    while(snaps.length>8) snaps.shift();
+    await idbPut(_idb,'snapshots',snaps);
+  }catch(e){}
+}
+async function snapshotElenco(){
+  if(!_idb) return [];
+  try{ return (await idbGet(_idb,'snapshots'))||[]; }catch(e){ return []; }
+}
+
+async function initStore(){
+  // 1. localStorage
+  CHIAVI.forEach(k=>{ try{ const v=localStorage.getItem(k); if(v!=null) _mem[k]=JSON.parse(v); }catch(e){} });
+  // 2. IndexedDB: vince se contiene più giri (localStorage può essere stato sfoltito da iOS)
+  try{
+    _idb = await idbOpen();
+    for(const k of CHIAVI){
+      const v = await idbGet(_idb,k);
+      if(v===undefined) continue;
+      if(k==='hcp_giri'){
+        const nLoc=(_mem[k]||[]).length, nIdb=(v||[]).length;
+        if(nIdb>nLoc) _mem[k]=v;
+      } else if(!(k in _mem)) _mem[k]=v;
+    }
+  }catch(e){ _idb=null; }
+  // 3. valori di partenza
+  if(!_mem['hcp_archivio_v3']) _mem['hcp_archivio_v3']=ARCHIVIO_DEFAULT;
+  if(!_mem['hcp_bastoni_v2'])  _mem['hcp_bastoni_v2']=BASTONI_DEFAULT;
+  if(!Array.isArray(_mem['hcp_giri'])) _mem['hcp_giri']=[];
+  if(!_mem['hcp_impostazioni']) _mem['hcp_impostazioni']={misura:'bandiera'};
+  if(!Array.isArray(_mem['hcp_giri_cancellati'])) _mem['hcp_giri_cancellati']=[];
+  if(!_mem['hcp_sync'] || typeof _mem['hcp_sync']!=='object') _mem['hcp_sync']={};
+  if(!_mem['hcp_sync'].giri || typeof _mem['hcp_sync'].giri!=='object') _mem['hcp_sync'].giri={};
+  if(!_mem['hcp_sync'].repo) _mem['hcp_sync'].repo='golf-dati';
+  const meta = _mem['hcp_meta'] || {schema:0, ultimoBackup:null, avvisoLegacy:0};
+  if(!Array.isArray(_mem['hcp_giri_archiviati'])) _mem['hcp_giri_archiviati']=[];
+
+  // 4. migrazioni di schema.
+  // Regola ferrea: prima di toccare qualunque cosa si salva una copia completa,
+  // e nessuna migrazione elimina dati — al massimo li mette da parte.
+  if((meta.schema||0) < SCHEMA_VERSION && (_mem['hcp_giri']||[]).length){
+    await snapshotSalva('prima dell\u2019aggiornamento a v'+SCHEMA_VERSION);
+  }
+  if((meta.schema||0) < 4){
+    const vecchi=_mem['hcp_giri'].filter(g=>!(g.buche && g.buche[0] && Array.isArray(g.buche[0].colpi)));
+    if(vecchi.length){
+      _mem['hcp_giri_archiviati']=_mem['hcp_giri_archiviati'].concat(vecchi);
+      _mem['hcp_giri']=_mem['hcp_giri'].filter(g=>g.buche && g.buche[0] && Array.isArray(g.buche[0].colpi));
+      meta.rimossiLegacy=(meta.rimossiLegacy||0)+vecchi.length;
+    }
+    meta.schema=4;
+  }
+  if((meta.schema||0) < 5){
+    // archivio campi rifatto sulle carte ufficiali GES Golf (tutti i tee, CR e Slope)
+    _mem['hcp_archivio_v3']=ARCHIVIO_DEFAULT;
+    meta.archivioRifatto=1;
+    meta.schema=SCHEMA_VERSION;
+  }
+  _mem['hcp_meta']=meta;
+  // 5. riscrivi tutto su entrambi gli strati
+  CHIAVI.forEach(k=>{ if(k in _mem) LS.set(k,_mem[k]); });
+  idbFlush();
+  // 6. chiedi a iOS di non sfrattare i dati
+  try{ if(navigator.storage && navigator.storage.persist){
+    const gia = await navigator.storage.persisted();
+    if(!gia) await navigator.storage.persist();
+  } }catch(e){}
+}
+
+function metaSet(patch){ const m={...(LS.get('hcp_meta',{})||{}), ...patch}; LS.set('hcp_meta',m); }
+function giriDaBackup(){
+  const m=LS.get('hcp_meta',{})||{};
+  if(!m.ultimoBackup) return LS.get('hcp_giri',[]).length;
+  return LS.get('hcp_giri',[]).filter(g=>(g.salvatoIl||0) > m.ultimoBackup).length;
+}
+
+let nav = [{view:'home'}];
+let bozza = null;
+let STAT_F = {circolo:'__tutti__', tee:'__tutti__', periodo:'tutti', baseline:'tour'};
+
+function push(v,p){ nav.push({view:v,params:p}); render(); }
+function back(){ if(nav.length>1){ nav.pop(); render(); } }
+function replaceTop(v,p){ nav[nav.length-1]={view:v,params:p}; render(); }
+function salvaBozza(){ LS.set('hcp_bozza_v3', bozza); }
+
+/* ==========================================================
+   HELPERS
+   ========================================================== */
+function uid(){ return 'g'+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); }
+function fmtData(d){ if(!d) return ''; const p=d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+function fmtDataBreve(d){ if(!d) return ''; const p=d.split('-'); return `${p[2]}/${p[1]}`; }
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function sgn(v,dec){ dec=dec===undefined?2:dec; return (v>=0?'+':'') + v.toFixed(dec); }
+function el(h){ const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.firstChild; }
+function escCsv(v){ if(v===null||v===undefined) return ''; const s=String(v); return /[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+function download(fn,txt){
+  const b=new Blob([txt],{type:'text/csv;charset=utf-8;'}), u=URL.createObjectURL(b);
+  const a=document.createElement('a'); a.href=u; a.download=fn;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(u),4000);
+}
+
+/* ==========================================================
+   ANALISI GIRO
+   ========================================================== */
+function formatoCompleto(g){ return !!(g.buche && g.buche[0] && Array.isArray(g.buche[0].colpi)); }
+
+function analizzaGiro(g, baseline){
+  baseline = baseline || 'tour';
+  if(!formatoCompleto(g)) return analizzaGiroLegacy(g);
+  let score=0,par=0,putt=0,pen=0,gir=0,scrOpp=0,scrOk=0;
+  const sgCat = {tee:0, approccio:0, corto:0, putting:0};
+  const nCat  = {tee:0, approccio:0, corto:0, putting:0};
+  const buche = g.buche.map((b,i)=>{
+    const colpi = b.colpi||[];
+    const penB = colpi.reduce((s,c)=>s+(c.penalita?1:0),0);
+    const nPutt = colpi.filter(c=>c.lie==='green').length;
+    const sc = colpi.length + penB;
+    const perGreen = colpi.length - nPutt + penB;
+    const girHit = colpi.length>0 && perGreen <= (b.par-2);
+    let sgB = 0;
+    const dettaglio = colpi.map((c,ci)=>{
+      const next = colpi[ci+1] || null;
+      const e0 = colpiAttesi(c.lie, c.distM, baseline);
+      const e1 = next ? colpiAttesi(next.lie, next.distM, baseline) : 0;
+      const sg = e0 - e1 - 1 - (c.penalita?1:0);
+      const cat = categoriaColpo(c.lie, c.distM, b.par);
+      sgCat[cat]+=sg; nCat[cat]++; sgB+=sg;
+      return {...c, sg, cat, e0, e1};
+    });
+    score+=sc; par+=b.par; putt+=nPutt; pen+=penB;
+    if(girHit){ gir++; } else { scrOpp++; if(sc<=b.par) scrOk++; }
+    return {buca:i+1, par:b.par, distanza:b.distanza, score:sc, putt:nPutt, girHit,
+            diff:sc-b.par, sg:sgB, colpi:dettaglio};
+  });
+  const sgTot = sgCat.tee+sgCat.approccio+sgCat.corto+sgCat.putting;
+  return {...g, completo:true, calc:{score,par,putt,pen,gir,scrOpp,scrOk,nBuche:buche.length,
+          sgCat, nCat, sgTot}, bucheCalc:buche};
+}
+
+// Giri registrati con la versione precedente dell'app: niente strokes gained
+function analizzaGiroLegacy(g){
+  let score=0,par=0,putt=0,corto=0,lunghi=0,pen=0,gir=0,scrOpp=0,scrOk=0;
+  const buche=(g.buche||[]).map((b,i)=>{
+    const p=(b.colpiLunghi||[]).filter(c=>c.penalita).length;
+    const perGreen=(b.colpiLunghi||[]).length+(b.colpiCorto||0)+p;
+    const sc=(b.totaleColpi!=null&&b.totaleColpi>0)?b.totaleColpi:(perGreen+(b.putt||0));
+    const girHit=perGreen<=(b.par-2);
+    score+=sc; par+=b.par; putt+=(b.putt||0); corto+=(b.colpiCorto||0);
+    lunghi+=(b.colpiLunghi||[]).length; pen+=p;
+    if(girHit) gir++; else { scrOpp++; if(sc<=b.par) scrOk++; }
+    return {buca:i+1,par:b.par,score:sc,putt:(b.putt||0),girHit,diff:sc-b.par,sg:null,colpi:[]};
+  });
+  return {...g, completo:false, calc:{score,par,putt,pen,gir,scrOpp,scrOk,nBuche:buche.length,
+          sgCat:null,nCat:null,sgTot:null}, bucheCalc:buche};
+}
+
+function statBastoni(giri){
+  const m={};
+  giri.forEach(g=>(g.buche||[]).forEach(b=>{
+    const colpi = b.colpi || null;
+    if(!colpi) return;
+    colpi.forEach((c,ci)=>{
+      const k=c.bastone; if(!k) return;
+      if(!m[k]) m[k]={bastone:k,usi:0,distTot:0,distN:0,dist:[]};
+      m[k].usi++;
+      const next=colpi[ci+1];
+      const fine = next ? next.distM : 0;
+      const perc = c.distM - fine;
+      if(perc>0 && c.lie!=='green'){ m[k].distTot+=perc; m[k].distN++; m[k].dist.push(perc); }
+    });
+  }));
+  return Object.values(m).map(x=>{
+    const d=x.dist.slice().sort((a,b)=>a-b);
+    const q=f=> d.length? d[Math.min(d.length-1, Math.floor(f*(d.length-1)))] : null;
+    const mu = x.distN? x.distTot/x.distN : 0;
+    const sd = d.length>=3 ? Math.sqrt(d.reduce((s2,v)=>s2+(v-mu)*(v-mu),0)/(d.length-1)) : null;
+    return {bastone:x.bastone, usi:x.usi,
+      distMedia: x.distN?Math.round(x.distTot/x.distN):null,
+      disp: sd!==null?Math.round(sd):null,
+      p10: d.length>=5?Math.round(q(0.10)):null, p90: d.length>=5?Math.round(q(0.90)):null,
+      dMin: d.length?Math.round(d[0]):null, dMax: d.length?Math.round(d[d.length-1]):null};
+  }).sort((a,b)=>b.usi-a.usi);
+}
+
+function statPerBuca(A){
+  const m={};
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    if(!m[b.buca]) m[b.buca]={buca:b.buca,par:b.par,diffTot:0,n:0};
+    m[b.buca].diffTot+=b.diff; m[b.buca].n++;
+  }));
+  return Object.values(m).map(x=>({...x,diffMedia:x.diffTot/x.n})).sort((a,b)=>b.diffMedia-a.diffMedia);
+}
+
+function statMiglioriPeggiori(completi){
+  if(completi.length<4) return null;
+  const ord=completi.slice().sort((a,b)=>(a.calc.score-a.calc.par)-(b.calc.score-b.calc.par));
+  const k=Math.floor(ord.length/2);
+  const best=ord.slice(0,k), worst=ord.slice(ord.length-k);
+  const cats=['tee','approccio','corto','putting'];
+  const md=(arr,c)=>arr.reduce((s,g)=>s+g.calc.sgCat[c],0)/arr.length;
+  const par=arr=>arr.reduce((s,g)=>s+(g.calc.score-g.calc.par),0)/arr.length;
+  return {k, parBest:par(best), parWorst:par(worst),
+    best:cats.reduce((o,c)=>(o[c]=md(best,c),o),{}),
+    worst:cats.reduce((o,c)=>(o[c]=md(worst,c),o),{})};
+}
+function statDaTee(completi){
+  const m={};
+  completi.forEach(g=>g.bucheCalc.forEach(b=>{
+    if(b.par<4 || b.colpi.length<2 || b.colpi[0].lie!=='tee') return;
+    const l=b.colpi[1].lie;
+    if(!m[l]) m[l]={lie:l,n:0,sopraPar:0,gir:0,sg:0};
+    m[l].n++; m[l].sopraPar+=b.diff; if(b.girHit)m[l].gir++; m[l].sg+=b.sg;
+  }));
+  return Object.values(m).map(x=>({...x, media:x.sopraPar/x.n, girPct:100*x.gir/x.n, sgB:x.sg/x.n}))
+    .sort((a,b)=>b.n-a.n);
+}
+function statPerPar(A){
+  const m={};
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    if(!m[b.par]) m[b.par]={par:b.par,n:0,sopraPar:0,gir:0,putt:0};
+    m[b.par].n++; m[b.par].sopraPar+=b.diff; if(b.girHit)m[b.par].gir++; m[b.par].putt+=b.putt;
+  }));
+  return Object.values(m).sort((a,b)=>a.par-b.par)
+    .map(x=>({...x, media:x.sopraPar/x.n, girPct:100*x.gir/x.n, puttB:x.putt/x.n}));
+}
+function statBlocchi(A){
+  const b=[0,1,2,3,4,5].map(i=>({i, nome:`${i*3+1}–${i*3+3}`, n:0, sopraPar:0, gir:0, putt:0, sg:0}));
+  let nGiri=0;
+  A.forEach(g=>{
+    if(g.calc.nBuche<18) return;
+    nGiri++;
+    g.bucheCalc.forEach(h=>{
+      const k=Math.floor((h.buca-1)/3); if(k<0||k>5) return;
+      const z=b[k];
+      z.n++; z.sopraPar+=h.diff; if(h.girHit)z.gir++; z.putt+=h.putt;
+      if(h.sg!==null) z.sg+=h.sg;
+    });
+  });
+  return {nGiri, blocchi: nGiri? b.map(x=>({...x,
+    parGiro:x.sopraPar/nGiri, girPct:100*x.gir/x.n, puttB:x.putt/x.n, sgGiro:x.sg/nGiri})) : []};
+}
+function statNove(A){
+  const t=[{nome:'Prima nove',n:0,sopraPar:0,gir:0,putt:0},{nome:'Seconda nove',n:0,sopraPar:0,gir:0,putt:0}];
+  A.forEach(g=>{ if(g.calc.nBuche<18) return;
+    g.bucheCalc.forEach(b=>{ const z=t[b.buca<=9?0:1];
+      z.n++; z.sopraPar+=b.diff; if(b.girHit)z.gir++; z.putt+=b.putt; }); });
+  return t.filter(x=>x.n>0).map(x=>({...x, media:x.sopraPar/x.n, girPct:100*x.gir/x.n, puttB:x.putt/x.n}));
+}
+
+const FASCE_APP=[[0,100,'fino a 100 m'],[100,125,'100–125 m'],[125,150,'125–150 m'],
+  [150,175,'150–175 m'],[175,200,'175–200 m'],[200,9999,'oltre 200 m']];
+const FASCE_PUTT=[[0,1,'meno di 1 m'],[1,2,'1–2 m'],[2,3,'2–3 m'],[3,5,'3–5 m'],
+  [5,8,'5–8 m'],[8,12,'8–12 m'],[12,999,'oltre 12 m']];
+
+function statFasce(A){
+  const out=FASCE_APP.map(f=>({label:f[2],lo:f[0],hi:f[1],n:0,sg:0,prox:0,nProx:0,green:0}));
+  A.forEach(g=>g.bucheCalc.forEach(b=>b.colpi.forEach((c,i)=>{
+    if(c.cat!=='approccio') return;
+    const f=out.find(x=>c.distM>=x.lo && c.distM<x.hi); if(!f) return;
+    f.n++; f.sg+=c.sg;
+    const nx=b.colpi[i+1];
+    if(!nx){ f.green++; f.nProx++; }
+    else if(nx.lie==='green'){ f.green++; f.prox+=nx.distM; f.nProx++; }
+  })));
+  return out.filter(x=>x.n>0);
+}
+function statPutting(A){
+  const out=FASCE_PUTT.map(f=>({label:f[2],lo:f[0],hi:f[1],n:0,imbucati:0,sg:0}));
+  let bucheConPutt=0, treputt=0;
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    const pt=b.colpi.filter(c=>c.lie==='green');
+    if(pt.length){ bucheConPutt++; if(pt.length>=3) treputt++; }
+    b.colpi.forEach((c,i)=>{
+      if(c.lie!=='green') return;
+      const f=out.find(x=>c.distM>=x.lo && c.distM<x.hi); if(!f) return;
+      f.n++; f.sg+=c.sg; if(!b.colpi[i+1]) f.imbucati++;
+    });
+  }));
+  return {fasce:out.filter(x=>x.n>0), bucheConPutt, treputt};
+}
+function statFairway(A){
+  let tot=0,presi=0;
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    if(b.par<4 || b.colpi.length<2 || b.colpi[0].lie!=='tee') return;
+    tot++; const l=b.colpi[1].lie; if(l==='fairway'||l==='green') presi++;
+  }));
+  return {tot,presi};
+}
+function statSand(A){
+  let opp=0,ok=0;
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    if(!b.colpi.some(c=>c.lie==='sabbia' && c.distM*M_TO_YD<=30)) return;
+    opp++; if(b.score<=b.par) ok++;
+  }));
+  return {opp,ok};
+}
+function statPerTipo(A){
+  const m={};
+  A.forEach(g=>{const t=g.tipo||'—';
+    if(!m[t]) m[t]={tipo:t,n:0,sopraPar:0,sg:0,completi:0};
+    m[t].n++; m[t].sopraPar+=g.calc.score-g.calc.par;
+    if(g.completo){ m[t].sg+=g.calc.sgTot; m[t].completi++; }});
+  return Object.values(m).map(x=>({...x, mediaPar:x.sopraPar/x.n,
+    mediaSg:x.completi?x.sg/x.completi:null})).sort((a,b)=>b.n-a.n);
+}
+
+/* ==========================================================
+   GRAFICI A LINEA (SVG inline, nessuna libreria)
+   ========================================================== */
+function svgLinea(vals, o){
+  o=o||{};
+  const W=300, H=o.h||86, PL=8, PR=8, PT=16, PB=o.xlab===false?8:17;
+  const n=vals.length; if(!n) return '';
+  const ys=vals.map(v=>v.y);
+  let min=(o.min!==undefined)?o.min:Math.min(...ys);
+  let max=(o.max!==undefined)?o.max:Math.max(...ys);
+  if(o.zero){ min=Math.min(min,0); max=Math.max(max,0); }
+  if(Math.abs(max-min)<1e-9){ max+=1; min-=1; }
+  const pad=(max-min)*0.15; min-=pad; max+=pad;
+  const X=i=> n===1 ? (PL+(W-PL-PR)/2) : PL + i*(W-PL-PR)/(n-1);
+  const Y=v=> PT + (max-v)/(max-min)*(H-PT-PB);
+  const col=o.colore||'var(--dv-blue)';
+  let sv=`<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(o.aria||'andamento')}">`;
+  if(o.zero && min<0 && max>0) sv+=`<line class="zero" x1="${PL}" y1="${Y(0).toFixed(1)}" x2="${W-PR}" y2="${Y(0).toFixed(1)}"/>`;
+  sv+=`<polyline class="lin" style="stroke:${col}" points="${vals.map((v,i)=>X(i).toFixed(1)+','+Y(v.y).toFixed(1)).join(' ')}"/>`;
+  vals.forEach((v,i)=>{ sv+=`<circle class="pt" cx="${X(i).toFixed(1)}" cy="${Y(v.y).toFixed(1)}" r="${o.r||3.2}" style="fill:${col}"/>`; });
+  const f=o.fmt||(v=>v.toFixed(1));
+  // l'etichetta va dalla parte opposta a dove prosegue la linea, per non coprirla
+  const posY=i=>{
+    if(n===1) return Math.max(10, Y(vals[i].y)-7);
+    const nb = i===0 ? 1 : n-2;
+    const sale = vals[nb].y > vals[i].y;
+    const y = sale ? Y(vals[i].y)+11 : Y(vals[i].y)-7;
+    return Math.min(H-PB-1, Math.max(10, y));
+  };
+  [[0,'start'],[n-1,'end']].forEach(([i,anc])=>{
+    if(n===1) anc='middle';
+    sv+=`<text class="val" x="${X(i).toFixed(1)}" y="${posY(i).toFixed(1)}" text-anchor="${anc}" style="fill:${col}">${f(vals[i].y)}</text>`;
+  });
+  if(o.xlab!==false && n>1){
+    sv+=`<text x="${PL}" y="${H-3}" text-anchor="start">${esc(vals[0].x)}</text>`;
+    sv+=`<text x="${W-PR}" y="${H-3}" text-anchor="end">${esc(vals[n-1].x)}</text>`;
+  }
+  return sv+'</svg>';
+}
+function svgBarreDiv(vals, o){
+  o=o||{};
+  const W=300, H=o.h||128, PL=4, PR=4, PT=15, PB=19;
+  const n=vals.length; if(!n) return '';
+  const ys=vals.map(v=>v.y);
+  const min=Math.min(0,...ys), max=Math.max(0,...ys);
+  const rng=(max-min)||1;
+  const Y=v=> PT + (max-v)/rng*(H-PT-PB);
+  const y0=Y(0);
+  const passo=(W-PL-PR)/n, bw=Math.max(6, passo-8);
+  const f=o.fmt||(v=>sgn(v,1));
+  let sv=`<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(o.aria||'confronto')}">`;
+  sv+=`<line class="zero" x1="${PL}" y1="${y0.toFixed(1)}" x2="${W-PR}" y2="${y0.toFixed(1)}"/>`;
+  vals.forEach((v,i)=>{
+    const cx=PL+passo*i+passo/2, yv=Y(v.y);
+    const alto=Math.max(1.5, Math.abs(yv-y0));
+    const col = v.y>0 ? (o.colPos||'var(--dv-red)') : v.y<0 ? (o.colNeg||'var(--dv-blue)') : 'var(--dv-neutral)';
+    sv+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${(v.y>=0?yv:y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${alto.toFixed(1)}" rx="3" style="fill:${col}"/>`;
+    const ly = v.y>=0 ? Math.max(9, yv-4) : Math.min(H-PB-1, yv+10);
+    sv+=`<text class="val" x="${cx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" style="fill:${col}">${f(v.y)}</text>`;
+    sv+=`<text x="${cx.toFixed(1)}" y="${H-4}" text-anchor="middle">${esc(v.x)}</text>`;
+  });
+  return sv+'</svg>';
+}
+function boxTrend(titolo, vals, colore, o){
+  o=Object.assign({h:70, xlab:false, zero:true, colore:colore}, o||{});
+  return `<div class="smbox"><div class="t">${esc(titolo)}</div>${svgLinea(vals,o)}</div>`;
+}
+
+
+/* ==========================================================
+   SINCRONIZZAZIONE CON IL REPOSITORY PRIVATO
+   ==========================================================
+   Le sei condizioni non negoziabili, dal piano del 15/08/2026.
+   Ogni riga di questo blocco esiste per rispettarne una:
+
+   1. la sincronizzazione AGGIUNGE, non cancella mai
+      → nessuna DELETE se non dopo che la copia in cancellati/ è stata scritta
+        con successo, e nessun giro sparisce dal telefono senza finire prima
+        in hcp_giri_cancellati
+   2. nessuna sovrascrittura silenziosa
+      → ogni scrittura porta con sé lo sha della versione che ci si aspetta di
+        trovare; se non corrisponde, GitHub rifiuta e l'app chiede a te
+   3. stato sempre visibile, fallimento sempre annunciato
+      → riga di stato in home, scheda Sincronizzazione, nessun errore ingoiato
+   4. il backup su file resta la via di scorta
+      → la scheda Backup non è stata toccata
+   5. repository dati privato, token limitato
+      → all'attivazione l'app verifica che il repository sia davvero privato
+   6. collaudo su archivio finto prima dei dati veri
+      → il campo "api" permette di puntare a un server di prova
+*/
+const GH_API = 'https://api.github.com';
+const SYNC_DEF = {attiva:false, utente:'', repo:'golf-dati', token:'', dispositivo:'',
+                  giri:{}, ultimoOk:null, ultimoErrore:null, privato:null, api:null};
+
+function S(){ return Object.assign({}, SYNC_DEF, LS.get('hcp_sync',{})||{}); }
+function Sset(patch){ LS.set('hcp_sync', Object.assign(S(), patch)); }
+
+/* --- base64 che regge gli accenti (i nomi dei circoli ne sono pieni) --- */
+function b64enc(str){
+  const b=new TextEncoder().encode(str); let s='';
+  for(let i=0;i<b.length;i+=0x8000) s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));
+  return btoa(s);
+}
+function b64dec(b64){
+  const bin=atob(String(b64).replace(/\s/g,'')); const b=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) b[i]=bin.charCodeAt(i);
+  return new TextDecoder().decode(b);
+}
+
+/* --- una sola porta verso GitHub, così gli errori si traducono in un posto solo --- */
+async function ghFetch(percorso, opz){
+  const s=S();
+  if(!s.token) throw Object.assign(new Error('Token non impostato.'),{stato:0});
+  opz=opz||{};
+  const h={'Authorization':'Bearer '+s.token,
+           'Accept':'application/vnd.github+json',
+           'X-GitHub-Api-Version':'2022-11-28'};
+  if(opz.body) h['Content-Type']='application/json';
+  let r;
+  try{
+    r=await fetch((s.api||GH_API)+percorso, {method:opz.method||'GET', headers:h, body:opz.body});
+  }catch(e){
+    throw Object.assign(new Error('Non sono riuscito a raggiungere GitHub. Connessione assente o instabile.'),{stato:0});
+  }
+  if(r.status===204) return null;
+  let d=null; try{ d=await r.json(); }catch(e){}
+  if(r.ok) return d;
+  const msg=(d&&d.message)||'';
+  let testo;
+  if(r.status===401) testo='Il token non è valido, è scaduto o è stato revocato. Generane uno nuovo su GitHub e reincollalo qui.';
+  else if(r.status===403 && /rate limit/i.test(msg)) testo='GitHub ha messo in pausa le richieste per qualche minuto. Riprova fra poco: non si è perso niente.';
+  else if(r.status===403) testo='Il token non ha il permesso di scrivere in questo repository. Controlla che sia impostato su "Contents: Read and write" e che includa proprio golf-dati.';
+  else if(r.status===404) testo='Non trovo il repository. Controlla il nome utente e il nome del repository, e che il token comprenda proprio quel repository.';
+  else if(r.status===409) testo='Il file è cambiato su GitHub dopo l’ultima volta che questo telefono l’ha visto.';
+  else if(r.status===422) testo='GitHub ha rifiutato la scrittura: '+(msg||'richiesta non valida')+'.';
+  else testo='GitHub ha risposto con un errore ('+r.status+'). '+msg;
+  throw Object.assign(new Error(testo),{stato:r.status, github:msg});
+}
+function ghPath(sotto){
+  const s=S();
+  return '/repos/'+encodeURIComponent(s.utente)+'/'+encodeURIComponent(s.repo)+'/contents/'+sotto;
+}
+
+/* --- nome del file di un giro: deciso una volta sola e poi mai più cambiato,
+       così tutti i dispositivi lo chiamano allo stesso modo per sempre --- */
+function slug(t){
+  return String(t||'campo').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,32) || 'campo';
+}
+function nomeFileGiro(g){
+  if(g.file) return g.file;
+  const coda=String(g.id||'').slice(-4) || Math.random().toString(36).slice(2,6);
+  return (g.data||'0000-00-00')+'-'+slug(g.circolo)+'-'+coda+'.json';
+}
+function nomeDispositivoIniziale(){
+  const ua=navigator.userAgent||'';
+  const base = /iPhone/i.test(ua) ? 'iPhone' : /iPad/i.test(ua) ? 'iPad'
+             : /Macintosh|Mac OS/i.test(ua) ? 'Mac' : /Android/i.test(ua) ? 'Android' : 'dispositivo';
+  return base+'-'+Math.random().toString(36).slice(2,5);
+}
+/* Marca un giro come modificato adesso. Questi tre campi sono l'unica aggiunta
+   al formato dei giri: servono a riconoscere i duplicati e a vedere i conflitti. */
+function marcaModifica(g){
+  if(!g) return g;
+  if(!g.file) g.file=nomeFileGiro(g);
+  g.schema=SCHEMA_VERSION;
+  g.modificatoIl=new Date().toISOString();
+  g.modificatoDa=S().dispositivo||'dispositivo';
+  return g;
+}
+
+/* --- stato della sessione corrente (non serve conservarlo: si ricostruisce da solo) --- */
+let _sy={inCorso:false, promessa:null, conflitti:[], snapFatto:false, ultimoEsito:null};
+
+function giriDaSincronizzare(){
+  const s=S(), giri=LS.get('hcp_giri',[]);
+  return giri.filter(g=>{
+    const st=s.giri[g.id];
+    if(!st) return true;
+    return st.modificatoIl !== (g.modificatoIl||null);
+  });
+}
+function cancellatiDaSpostare(){
+  return LS.get('hcp_giri_cancellati',[]).filter(c=>!c.spostato);
+}
+function syncInSospeso(){ return giriDaSincronizzare().length + cancellatiDaSpostare().length; }
+function syncConfigurata(){ const s=S(); return !!(s.attiva && s.token && s.utente && s.repo); }
+
+async function snapUnaVolta(){
+  if(_sy.snapFatto) return;
+  _sy.snapFatto=true;
+  await snapshotSalva('prima di una sincronizzazione');
+}
+function registraConflitto(id, locale, remoto, sha, file){
+  if(_sy.conflitti.some(c=>c.id===id)) return;
+  _sy.conflitti.push({id:id, locale:locale, remoto:remoto, sha:sha, file:file});
+}
+
+/* --- verifica delle impostazioni: legge e basta, non scrive niente --- */
+async function syncVerifica(){
+  const s=S();
+  if(!s.utente) throw new Error('Manca il nome utente GitHub.');
+  if(!s.repo)   throw new Error('Manca il nome del repository.');
+  if(!s.token)  throw new Error('Manca il token.');
+  const r=await ghFetch('/repos/'+encodeURIComponent(s.utente)+'/'+encodeURIComponent(s.repo));
+  const privato = r && r.private===true;
+  Sset({privato:privato});
+  return {privato:privato, nome:(r&&r.full_name)||''};
+}
+
+/* --- SALITA: un giro alla volta, ognuno con lo sha che ci si aspetta di trovare --- */
+async function syncCaricaGiro(g){
+  if(!g.modificatoIl || !g.file){ marcaModifica(g); salvaGiro(g, true); }
+  const s=S(), st=s.giri[g.id]||{}, path=ghPath('giri/'+encodeURIComponent(g.file));
+  const corpo={message:'giro '+(g.data||'')+' '+(g.circolo||'')+' — '+(s.dispositivo||''),
+               content:b64enc(JSON.stringify(g,null,1))};
+  if(st.sha) corpo.sha=st.sha;
+  let r;
+  try{
+    r=await ghFetch(path,{method:'PUT', body:JSON.stringify(corpo)});
+  }catch(e){
+    // 409 = qualcuno ha toccato il file dopo di noi. 422 = il file esiste già e noi
+    // non lo sapevamo. In entrambi i casi si guarda cosa c'è davvero prima di scrivere.
+    if(e.stato===409 || e.stato===422) return await syncRisolviSalita(g, path);
+    throw e;
+  }
+  const s2=S(); s2.giri[g.id]={sha:r.content.sha, modificatoIl:g.modificatoIl, file:g.file};
+  Sset({giri:s2.giri});
+  return 'caricato';
+}
+
+async function syncRisolviSalita(g, path){
+  const remotoRaw=await ghFetch(path);
+  let remoto=null;
+  try{ remoto=JSON.parse(b64dec(remotoRaw.content)); }catch(e){}
+  const s=S(), st=s.giri[g.id]||{};
+
+  // caso A — sul repository c'è già esattamente la nostra versione: nulla da fare
+  if(remoto && remoto.modificatoIl===g.modificatoIl){
+    const s2=S(); s2.giri[g.id]={sha:remotoRaw.sha, modificatoIl:g.modificatoIl, file:g.file};
+    Sset({giri:s2.giri}); return 'allineato';
+  }
+  // caso B — sul repository c'è la versione che questo telefono aveva caricato,
+  // e la nostra discende da quella: non è un conflitto, è un aggiornamento normale
+  if(remoto && st.modificatoIl && remoto.modificatoIl===st.modificatoIl){
+    const corpo={message:'correzione giro '+(g.data||'')+' — '+(s.dispositivo||''),
+                 content:b64enc(JSON.stringify(g,null,1)), sha:remotoRaw.sha};
+    const r2=await ghFetch(path,{method:'PUT', body:JSON.stringify(corpo)});
+    const s2=S(); s2.giri[g.id]={sha:r2.content.sha, modificatoIl:g.modificatoIl, file:g.file};
+    Sset({giri:s2.giri}); return 'caricato';
+  }
+  // caso C — due versioni diverse, nessuna delle due discende dall'altra:
+  // qui l'app si ferma e chiede. Non scrive niente.
+  registraConflitto(g.id, g, remoto, remotoRaw.sha, g.file);
+  return 'conflitto';
+}
+
+async function syncCaricaTutti(){
+  const daFare=giriDaSincronizzare();
+  let n=0;
+  for(const g of daFare){
+    const esito=await syncCaricaGiro(g);
+    if(esito==='caricato') n++;
+  }
+  return n;
+}
+
+/* --- DISCESA: quello che c'è sul repository e non c'è qui viene aggiunto --- */
+async function syncScarica(){
+  const s=S();
+
+  // 1. i giri cancellati altrove: si nascondono qui, senza distruggere niente
+  let elencoCanc=[];
+  try{ elencoCanc=await ghFetch(ghPath('cancellati'))||[]; }
+  catch(e){ if(e.stato!==404) throw e; }
+  const nomiCanc=new Set((Array.isArray(elencoCanc)?elencoCanc:[]).filter(x=>x.type==='file').map(x=>x.name));
+  if(nomiCanc.size){
+    const giri=LS.get('hcp_giri',[]);
+    const daNascondere=giri.filter(g=>g.file && nomiCanc.has(g.file));
+    if(daNascondere.length){
+      await snapUnaVolta();
+      const canc=LS.get('hcp_giri_cancellati',[]);
+      daNascondere.forEach(g=>{
+        if(!canc.some(c=>c.id===g.id)) canc.push({id:g.id, file:g.file, giro:g, spostato:true, quando:Date.now()});
+      });
+      LS.set('hcp_giri_cancellati', canc);
+      LS.set('hcp_giri', giri.filter(g=>!(g.file && nomiCanc.has(g.file))));
+    }
+  }
+  const nascostiQui=new Set(LS.get('hcp_giri_cancellati',[]).map(c=>c.file).filter(Boolean));
+
+  // 2. l'elenco dei giri. Non c'è nessun file indice: l'elenco è la cartella stessa.
+  let elenco=[];
+  try{ elenco=await ghFetch(ghPath('giri'))||[]; }
+  catch(e){ if(e.stato===404) elenco=[]; else throw e; }
+  if(!Array.isArray(elenco)) elenco=[];
+
+  let nuovi=0, aggiornati=0;
+  for(const it of elenco){
+    if(it.type!=='file' || !/\.json$/i.test(it.name)) continue;
+    if(nomiCanc.has(it.name) || nascostiQui.has(it.name)) continue;
+
+    const giri=LS.get('hcp_giri',[]);
+    const locale=giri.find(g=>g.file===it.name) || null;
+    const st=locale ? (S().giri[locale.id]||{}) : {};
+    if(locale && st.sha===it.sha) continue;      // già identico: non si scarica
+
+    let d=null;
+    const r=await ghFetch(ghPath('giri/'+encodeURIComponent(it.name)));
+    try{ d=JSON.parse(b64dec(r.content)); }catch(e){ continue; }
+    if(!d || !d.id || !Array.isArray(d.buche)) continue;
+    if(!d.file) d.file=it.name;
+
+    const perId=giri.find(g=>g.id===d.id) || locale;
+
+    if(!perId){                                   // giro nuovo: si aggiunge, punto
+      await snapUnaVolta();
+      giri.push(d); LS.set('hcp_giri', giri);
+      const s2=S(); s2.giri[d.id]={sha:r.sha, modificatoIl:d.modificatoIl||null, file:d.file};
+      Sset({giri:s2.giri}); nuovi++; continue;
+    }
+    if((d.modificatoIl||null)===(perId.modificatoIl||null)){   // stessa versione
+      const s2=S(); s2.giri[perId.id]={sha:r.sha, modificatoIl:perId.modificatoIl||null, file:perId.file||it.name};
+      Sset({giri:s2.giri}); continue;
+    }
+    const stId=S().giri[perId.id]||{};
+    const localeIntatto = stId.modificatoIl===(perId.modificatoIl||null);
+    if(localeIntatto){                            // qui non è stato toccato: si accetta
+      await snapUnaVolta();
+      const i=giri.findIndex(g=>g.id===perId.id);
+      giri[i]=d; LS.set('hcp_giri', giri);
+      const s2=S(); s2.giri[d.id]={sha:r.sha, modificatoIl:d.modificatoIl||null, file:d.file};
+      Sset({giri:s2.giri}); aggiornati++; continue;
+    }
+    // toccato in tutti e due i posti: si chiede, non si sceglie da soli
+    registraConflitto(perId.id, perId, d, r.sha, perId.file||it.name);
+  }
+  idbFlush();
+  return {nuovi:nuovi, aggiornati:aggiornati};
+}
+
+/* --- CANCELLAZIONE: spostamento, mai distruzione --- */
+async function syncSpostaCancellati(){
+  const canc=LS.get('hcp_giri_cancellati',[]);
+  let mosso=0;
+  for(const c of canc){
+    if(c.spostato || !c.file) continue;
+    const pNuovo=ghPath('cancellati/'+encodeURIComponent(c.file));
+    const pVecchio=ghPath('giri/'+encodeURIComponent(c.file));
+    // 1. prima la copia di sicurezza in cancellati/
+    let shaEsistente=null;
+    try{ const e=await ghFetch(pNuovo); shaEsistente=e.sha; }
+    catch(e){ if(e.stato!==404) throw e; }
+    const corpo={message:'giro rimosso dal telefono '+(S().dispositivo||''),
+                 content:b64enc(JSON.stringify(c.giro,null,1))};
+    if(shaEsistente) corpo.sha=shaEsistente;
+    await ghFetch(pNuovo,{method:'PUT', body:JSON.stringify(corpo)});
+    // 2. solo adesso, e solo perché la copia esiste, il file esce da giri/
+    try{
+      const v=await ghFetch(pVecchio);
+      await ghFetch(pVecchio,{method:'DELETE',
+        body:JSON.stringify({message:'spostato in cancellati/', sha:v.sha})});
+    }catch(e){ if(e.stato!==404) throw e; }
+    c.spostato=true; mosso++;
+    const s2=S(); delete s2.giri[c.id]; Sset({giri:s2.giri});
+  }
+  if(mosso) LS.set('hcp_giri_cancellati', canc);
+  return mosso;
+}
+
+/* --- il giro di sincronizzazione completo --- */
+function syncEsegui(){
+  if(!syncConfigurata()) return Promise.resolve({esito:'spenta'});
+  // Se una sincronizzazione è già in corso — per esempio quella automatica
+  // dell'apertura — chi arriva dopo non viene respinto: aspetta quella.
+  if(_sy.inCorso && _sy.promessa) return _sy.promessa;
+  if(navigator.onLine===false){
+    Sset({ultimoErrore:'Nessuna connessione. I giri restano nel telefono e salgono da soli appena torna la rete.'});
+    return Promise.resolve({esito:'offline'});
+  }
+  _sy.inCorso=true; _sy.snapFatto=false; _sy.conflitti=[];
+  _sy.promessa=_syncEseguiOra();
+  return _sy.promessa;
+}
+async function _syncEseguiOra(){
+  try{
+    const mossi=await syncSpostaCancellati();
+    const giu=await syncScarica();
+    const su=await syncCaricaTutti();
+    Sset({ultimoOk:Date.now(), ultimoErrore:null});
+    _sy.ultimoEsito={caricati:su, nuovi:giu.nuovi, aggiornati:giu.aggiornati, rimossi:mossi,
+                     conflitti:_sy.conflitti.length};
+    return Object.assign({esito:'ok'}, _sy.ultimoEsito);
+  }catch(e){
+    const m=e&&e.message||String(e);
+    Sset({ultimoErrore:m});
+    return {esito:'errore', messaggio:m};
+  }finally{ _sy.inCorso=false; _sy.promessa=null; }
+}
+
+/* Sincronizzazione di sfondo: non blocca mai l'uso dell'app e, se va male,
+   lascia il segno nella riga di stato invece di sparire in silenzio. */
+function syncAuto(){
+  if(!syncConfigurata()) return;
+  syncEsegui().then(r=>{
+    if(!r || r.esito==='spenta' || r.esito==='gia_in_corso') return;
+    const v=nav[nav.length-1].view;
+    if(v==='home' || v==='sincronizza') render();
+  });
+}
+
+/* --- cancellazione di un giro dal telefono --- */
+function eliminaGiroLocale(g){
+  const giri=LS.get('hcp_giri',[]);
+  const i=giri.findIndex(x=>x.id===g.id);
+  if(i<0) return;
+  snapshotSalva('prima di eliminare un giro');
+  const canc=LS.get('hcp_giri_cancellati',[]);
+  if(!canc.some(c=>c.id===g.id)){
+    canc.push({id:g.id, file:g.file||nomeFileGiro(g), giro:g,
+               spostato: !S().giri[g.id], quando:Date.now()});
+    LS.set('hcp_giri_cancellati', canc);
+  }
+  giri.splice(i,1); LS.set('hcp_giri', giri); idbFlush();
+  syncAuto();
+}
+
+/* --- risoluzione di un conflitto, decisa da te --- */
+function risolviConflitto(id, scelta){
+  const c=_sy.conflitti.find(x=>x.id===id); if(!c) return;
+  const giri=LS.get('hcp_giri',[]); const i=giri.findIndex(g=>g.id===id);
+  snapshotSalva('prima di risolvere un conflitto');
+  if(scelta==='locale'){
+    // si tiene la versione del telefono: le si dà l'ora di adesso e si allinea
+    // lo sha a quello che c'è ora sul repository, così la prossima salita passa
+    const g=giri[i]; if(g){ marcaModifica(g); giri[i]=g; LS.set('hcp_giri',giri); }
+    const s2=S(); s2.giri[id]={sha:c.sha, modificatoIl:null, file:c.file}; Sset({giri:s2.giri});
+  }else{
+    // si tiene la versione del repository
+    if(i>=0 && c.remoto){ giri[i]=c.remoto; LS.set('hcp_giri',giri); }
+    else if(c.remoto){ giri.push(c.remoto); LS.set('hcp_giri',giri); }
+    const s2=S(); s2.giri[id]={sha:c.sha, modificatoIl:(c.remoto&&c.remoto.modificatoIl)||null, file:c.file};
+    Sset({giri:s2.giri});
+  }
+  _sy.conflitti=_sy.conflitti.filter(x=>x.id!==id);
+  idbFlush();
+  syncAuto(); render();
+}
+
+/* La riga di stato in home. Esiste per la condizione 3: lo stato della
+   sincronizzazione deve essere visibile senza doverlo andare a cercare. */
+function rigaStatoSync(){
+  const s=S(), sosp=syncInSospeso();
+  let col, testo;
+  if(!s.attiva){
+    col='var(--grigio)';
+    testo='<b>Sincronizzazione spenta.</b> I giri vivono solo in questo telefono. Tocca per attivarla.';
+  } else if(s.ultimoErrore){
+    col='var(--rosso)';
+    testo='<b>Sincronizzazione ferma.</b> '+esc(String(s.ultimoErrore).slice(0,90))+(String(s.ultimoErrore).length>90?'…':'');
+  } else if(_sy.conflitti.length){
+    col='var(--ambra)';
+    testo='<b>'+_sy.conflitti.length+' giro/i da decidere.</b> Due versioni diverse dello stesso giro: tocca per scegliere.';
+  } else if(sosp>0){
+    col='var(--ambra)';
+    testo='<b>'+sosp+(sosp===1?' giro non ancora al sicuro.':' giri non ancora al sicuro.')+'</b> Salgono da soli appena c\u2019\u00e8 rete.';
+  } else {
+    col='var(--dv-good)';
+    testo='<b>Tutto al sicuro.</b> Ultimo invio '+esc(quandoTesto(s.ultimoOk))+'.';
+  }
+  const r=el('<div class="syncline"><span class="pallino" style="background:'+col+'"></span><span>'+testo+'</span><span class="frecc">\u203A</span></div>');
+  r.onclick=()=>push('sincronizza');
+  return r;
+}
+
+function quandoTesto(ts){
+  if(!ts) return 'mai';
+  const d=new Date(ts), ora=Date.now(), diff=(ora-ts)/1000;
+  if(diff<90) return 'poco fa';
+  if(diff<3600) return Math.round(diff/60)+' minuti fa';
+  const oggi=new Date().toDateString()===d.toDateString();
+  const hh=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  return oggi ? 'oggi alle '+hh : d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' alle '+hh;
+}
+
+/* ==========================================================
+   RENDER
+   ========================================================== */
+const VIEWS = {};
+function render(){
+  const top=nav[nav.length-1], app=document.getElementById('app');
+  app.innerHTML='';
+  const r=VIEWS[top.view](top.params||{});
+  app.appendChild(el(`<header class="topbar">
+    ${nav.length>1?'<button class="backbtn" onclick="back()">‹</button>':'<span style="width:30px;display:inline-block;"></span>'}
+    <h1>${esc(r.header)}</h1></header>`));
+  const m=document.createElement('main'); m.appendChild(r.body); app.appendChild(m);
+  window.scrollTo(0,0);
+}
+
+/* ---------------- HOME ---------------- */
+VIEWS.home = function(){
+  const giri=LS.get('hcp_giri',[]);
+  const body=el('<div></div>');
+  if(window.navigator.standalone!==true){
+    body.appendChild(el(`<div class="installtip">📱 <b>Consiglio:</b> apri questa pagina in Safari, tocca Condividi
+      e scegli <b>"Aggiungi alla schermata Home"</b>. Da lì parte come un'app a schermo intero e funziona anche senza connessione.</div>`));
+  }
+  body.appendChild(rigaStatoSync());
+
+  const b1=el('<button class="btn big">+ Nuovo giro</button>');
+  b1.onclick=()=>push('nuovoGiro'); body.appendChild(b1);
+
+  if(bozza && bozza.stato==='in_corso'){
+    const c=el(`<div class="card" style="border-color:var(--ambra)">
+      <h2>Giro in corso</h2>
+      <div class="listitem" style="border:none;padding:4px 0;">
+        <div><b>${esc(bozza.circolo)}</b> — Tee ${esc(bozza.tee)}
+          <div class="meta">${fmtData(bozza.data)} · buca ${bozza.bucaCorrente+1} di ${bozza.numBuche}</div></div>
+        <span class="badge bozza">RIPRENDI</span></div></div>`);
+    c.querySelector('.listitem').onclick=()=>push('buca');
+    body.appendChild(c);
+  }
+
+  const card=el('<div class="card"><h2>Giri salvati</h2></div>');
+  if(!giri.length) card.appendChild(el('<div class="empty">Nessun giro completato ancora.</div>'));
+  else giri.slice().reverse().forEach(g=>{
+    const A=analizzaGiro(g);
+    const it=el(`<div class="listitem">
+      <div><b>${esc(g.circolo)}</b><div class="meta">${fmtData(g.data)} · Tee ${esc(g.tee)} · ${A.calc.nBuche} buche${A.completo?'':' · formato vecchio'}</div></div>
+      <div style="text-align:right"><span class="badge">${A.calc.score}</span>
+        ${A.completo?`<div class="meta ${A.calc.sgTot>=0?'pos':'neg'}" style="margin-top:3px">SG ${sgn(A.calc.sgTot,1)}</div>`:''}</div>
+    </div>`);
+    it.onclick=()=>push('riepilogoGiro',{id:g.id});
+    card.appendChild(it);
+  });
+
+  const daSalv=giriDaBackup();
+  if(daSalv>=2){
+    const w=el(`<div class="card" style="border-color:var(--ambra)">
+      <h2 style="color:var(--ambra)">Backup consigliato</h2>
+      <div class="hint" style="margin-bottom:10px">Hai <b>${daSalv} giri</b> che esistono solo dentro questo
+        telefono. Bastano pochi secondi per metterli al sicuro su iCloud.</div></div>`);
+    const wb=el('<button class="btn" style="margin:0">💾 Salva backup adesso</button>');
+    wb.onclick=async()=>{ const r=await eseguiBackup(); if(r==='ok') render(); };
+    w.appendChild(wb); body.appendChild(w);
+  }
+
+  const b2=el('<button class="btn secondary">📊 Statistiche e strokes gained</button>');
+  b2.onclick=()=>push('statistiche'); body.appendChild(b2);
+  const nav2=el(`<div class="grid2">
+    <button class="btn ghost">📋 Campi</button>
+    <button class="btn ghost">💾 Backup</button>
+    <button class="btn ghost">☁︎ Sincronizza</button>
+    <button class="btn ghost">📖 Metodo e fonti</button>
+    <button class="btn ghost" style="grid-column:1/-1">⚙️ Impostazioni</button></div>`);
+  nav2.children[0].onclick=()=>push('archivio');
+  nav2.children[1].onclick=()=>push('backup');
+  nav2.children[2].onclick=()=>push('sincronizza');
+  nav2.children[3].onclick=()=>push('metodo');
+  nav2.children[4].onclick=()=>push('impostazioni');
+  body.appendChild(nav2);
+
+  body.appendChild(card);   // l'elenco dei giri chiude la schermata
+  return {header:'Registra Giro', body};
+};
+
+/* ---------------- NUOVO GIRO ---------------- */
+VIEWS.nuovoGiro = function(){
+  const arch=LS.get('hcp_archivio_v3',ARCHIVIO_DEFAULT);
+  const circoli=Object.keys(arch);
+  const oggi=new Date().toISOString().slice(0,10);
+  const body=el(`<div>
+    <div class="card"><h2>Dati giro</h2>
+      <label>Data</label><input type="date" id="f_data" value="${oggi}">
+      <label style="margin-top:10px;">Tipo</label>
+      <select id="f_tipo"><option>Gara Federale</option><option>Coppa Fragola</option><option>Allenamento</option></select>
+      <label style="margin-top:10px;">Circolo</label>
+      <select id="f_circolo">${circoli.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+        <option value="__altro__">Altro (non in archivio)…</option></select>
+      <div id="altroWrap" style="display:none;margin-top:8px;">
+        <input type="text" id="f_altro" placeholder="Nome circolo">
+        <div class="hint">Par e distanza andranno inseriti a mano buca per buca.</div></div>
+      <div class="row" style="margin-top:10px;">
+        <div><label>Tee</label><select id="f_tee"></select></div>
+        <div><label>Buche</label><select id="f_nb"><option value="18">18</option><option value="9">9</option></select></div>
+      </div>
+    </div>
+    <button class="btn big" id="go">Inizia il giro →</button></div>`);
+
+  const selC=body.querySelector('#f_circolo'), selT=body.querySelector('#f_tee');
+  function aggiornaTee(){
+    const c=selC.value;
+    if(c==='__altro__'){ selT.innerHTML='<option>Bianco</option><option>Giallo</option>'; return; }
+    selT.innerHTML=Object.keys(arch[c].tees).map(t=>`<option>${esc(t)}</option>`).join('');
+  }
+  aggiornaTee();
+  selC.onchange=()=>{ body.querySelector('#altroWrap').style.display = selC.value==='__altro__'?'block':'none'; aggiornaTee(); };
+
+  body.querySelector('#go').onclick=()=>{
+    const data=body.querySelector('#f_data').value;
+    const tipo=body.querySelector('#f_tipo').value;
+    const tee=selT.value, nb=parseInt(body.querySelector('#f_nb').value,10);
+    let nome=selC.value, buche;
+    if(nome==='__altro__'){
+      nome=(body.querySelector('#f_altro').value||'').trim()||'Circolo non specificato';
+      buche=Array.from({length:nb},()=>({par:4,distanza:null,colpi:[],chiusa:false}));
+    } else {
+      const a=arch[nome], t=a.tees[tee];
+      buche=Array.from({length:nb},(_,i)=>({par:a.par[i],distanza:t.d[i],si:a.si?a.si[i]:null,colpi:[],chiusa:false}));
+    }
+    bozza={id:uid(),data,tipo,circolo:nome,tee,numBuche:nb,stato:'in_corso',bucaCorrente:0,buche};
+    salvaBozza(); push('buca');
+  };
+  return {header:'Nuovo giro', body};
+};
+
+/* ---------------- BUCA: registrazione colpo per colpo ---------------- */
+VIEWS.buca = function(){
+  if(!bozza){ nav=[{view:'home'}]; return VIEWS.home(); }
+  const idx=bozza.bucaCorrente, b=bozza.buche[idx];
+  const bastoni=LS.get('hcp_bastoni_v2',BASTONI_DEFAULT);
+  const body=el('<div></div>');
+
+  body.appendChild(el(`<div class="holeprog">
+    <div><div class="n">Buca ${idx+1}<span style="font-size:15px;color:var(--grigio)">/${bozza.numBuche}</span></div></div>
+    <div class="par">Par <select id="parSel" style="width:56px;display:inline-block;padding:3px;">
+        ${[3,4,5,6].map(p=>`<option ${p===b.par?'selected':''}>${p}</option>`).join('')}</select><br>
+      <input type="number" id="distSel" value="${b.distanza??''}" placeholder="metri" style="width:76px;margin-top:4px;padding:3px;font-size:13px;"> m</div>
+  </div>`));
+  body.querySelector('#parSel').onchange=e=>{ b.par=parseInt(e.target.value,10); salvaBozza(); render(); };
+  body.querySelector('#distSel').onchange=e=>{ b.distanza=e.target.value?parseFloat(e.target.value):null; salvaBozza(); render(); };
+
+  // colpi già inseriti, con SG provvisorio
+  if(b.colpi.length){
+    const c=el('<div class="card"><h2>Colpi di questa buca</h2></div>');
+    b.colpi.forEach((s,i)=>{
+      const next=b.colpi[i+1]||null;
+      const e0=colpiAttesi(s.lie,s.distM,'tour');
+      const e1=next?colpiAttesi(next.lie,next.distM,'tour'):null;
+      const sg = e1===null ? null : (e0-e1-1-(s.penalita?1:0));
+      c.appendChild(el(`<div class="shot">
+        <span>${i+1}. ${LIE_NOME[s.lie]} ${s.distM} m · ${esc(s.bastone)}${s.penalita?' · +1 pen.':''}</span>
+        <span class="sgv ${sg===null?'':(sg>=0?'pos':'neg')}">${sg===null?'—':sgn(sg)}</span></div>`));
+    });
+    const del=el('<button class="btn ghost" style="margin-top:8px">↩︎ Annulla ultimo colpo</button>');
+    del.onclick=()=>{ b.colpi.pop(); salvaBozza(); render(); };
+    c.appendChild(del);
+    body.appendChild(c);
+  }
+
+  // form nuovo colpo
+  const nShot=b.colpi.length+1;
+  const lieDefault = nShot===1 ? 'tee' : null;
+  const distDefault = nShot===1 && b.distanza ? b.distanza : '';
+  const form=el(`<div class="card"><h2>Colpo ${nShot}</h2>
+    <div class="hint">Inserisci <b>prima di tirare</b>: dove si trova la palla, quanto manca alla buca, che bastone usi.</div>
+    <label>Lie</label>
+    <div class="grid3" id="lieGrid">${LIE_OPZ.map(l=>`<div class="chip${l.k===lieDefault?' selected':''}" data-v="${l.k}">${l.n}</div>`).join('')}</div>
+    <label style="margin-top:12px;">Distanza dalla buca (metri)</label>
+    <input type="number" inputmode="decimal" step="0.1" id="dist" value="${distDefault}" placeholder="es. 145">
+    <div id="bastWrap">
+      <label style="margin-top:12px;">Bastone</label>
+      <div class="grid3" id="bastGrid">${bastoni.map(x=>`<div class="chip" data-v="${esc(x)}">${esc(x)}</div>`).join('')}</div>
+    </div>
+    <label style="margin-top:12px;">Penalità su questo colpo?</label>
+    <div class="toggle2" id="pen"><button data-v="0" class="on">No</button><button data-v="1">Sì (+1)</button></div>
+    <button class="btn" style="margin-top:14px;" id="add">Aggiungi colpo</button>
+  </div>`);
+  let lieSel=lieDefault, bastSel=null, penSel=0;
+  function syncBast(){
+    const w=form.querySelector('#bastWrap');
+    if(lieSel==='green'){ w.style.display='none'; bastSel='Putter'; }
+    else w.style.display='block';
+  }
+  syncBast();
+  form.querySelector('#lieGrid').onclick=e=>{
+    const c=e.target.closest('.chip'); if(!c) return;
+    form.querySelectorAll('#lieGrid .chip').forEach(x=>x.classList.remove('selected'));
+    c.classList.add('selected'); lieSel=c.dataset.v; syncBast();
+  };
+  form.querySelector('#bastGrid').onclick=e=>{
+    const c=e.target.closest('.chip'); if(!c) return;
+    form.querySelectorAll('#bastGrid .chip').forEach(x=>x.classList.remove('selected'));
+    c.classList.add('selected'); bastSel=c.dataset.v;
+  };
+  form.querySelector('#pen').onclick=e=>{
+    const btn=e.target.closest('button'); if(!btn) return;
+    form.querySelectorAll('#pen button').forEach(x=>x.classList.remove('on'));
+    btn.classList.add('on'); penSel=parseInt(btn.dataset.v,10);
+  };
+  form.querySelector('#add').onclick=()=>{
+    const d=form.querySelector('#dist').value;
+    if(!lieSel){ alert('Scegli il lie.'); return; }
+    if(d===''||isNaN(parseFloat(d))){ alert('Inserisci la distanza dalla buca in metri.'); return; }
+    if(!bastSel){ alert('Scegli il bastone.'); return; }
+    b.colpi.push({lie:lieSel, distM:parseFloat(d), bastone:bastSel, penalita:!!penSel});
+    salvaBozza(); render();
+  };
+  body.appendChild(form);
+
+  if(b.colpi.length){
+    const pen=b.colpi.reduce((s,c)=>s+(c.penalita?1:0),0);
+    const tot=b.colpi.length+pen;
+    const isUlt = idx===bozza.numBuche-1;
+    const chiudi=el(`<button class="btn big">⛳ Palla in buca — ${tot} colpi${isUlt?' · termina giro':''}</button>`);
+    chiudi.onclick=()=>{
+      b.chiusa=true;
+      if(isUlt){
+        bozza.stato='completato';
+        bozza.salvatoIl = Date.now();
+        bozza.misura = (LS.get('hcp_impostazioni',{})||{}).misura || 'bandiera';
+        marcaModifica(bozza);
+        const giri=LS.get('hcp_giri',[]); giri.push(bozza); LS.set('hcp_giri',giri);
+        snapshotSalva();
+        const id=bozza.id; LS.set('hcp_bozza_v3',null); bozza=null;
+        replaceTop('riepilogoGiro',{id});
+        syncAuto();   // il giro appena chiuso parte subito, se c'e' rete
+      } else { bozza.bucaCorrente++; salvaBozza(); render(); }
+    };
+    body.appendChild(chiudi);
+  }
+  return {header:bozza.circolo, body};
+};
+
+/* ---------------- RIEPILOGO GIRO ---------------- */
+VIEWS.riepilogoGiro = function(p){
+  const giri=LS.get('hcp_giri',[]);
+  const g=giri.find(x=>x.id===p.id);
+  const body=el('<div></div>');
+  if(!g){ body.appendChild(el('<div class="empty">Giro non trovato.</div>')); return {header:'Riepilogo',body}; }
+  const A=analizzaGiro(g, STAT_F.baseline);
+  const c=A.calc, d=c.score-c.par;
+  body.appendChild(el(`<div class="card"><h2>${esc(g.circolo)}</h2>
+    <div class="hint">${fmtData(g.data)} · ${esc(g.tipo)} · Tee ${esc(g.tee)} · ${c.nBuche} buche</div>
+    <div style="font-size:36px;font-weight:800;color:var(--verde-testo);margin-top:6px;">${c.score}
+      <span style="font-size:16px;color:var(--grigio);">(par ${c.par}, ${sgn(d,0)})</span></div>
+    ${A.completo?`<div class="hint" style="margin-top:8px">Strokes gained totale
+      <b class="${c.sgTot>=0?'pos':'neg'}">${sgn(c.sgTot)}</b> rispetto ${STAT_F.baseline==='scratch'?'a un giocatore scratch (stima)':'al PGA Tour'}</div>`:''}
+  </div>`));
+
+  if(A.completo){
+    const cats=['tee','approccio','corto','putting'];
+    const maxA=Math.max(0.5,...cats.map(k=>Math.abs(c.sgCat[k])));
+    const card=el('<div class="card"><h2>Strokes gained per categoria</h2></div>');
+    cats.forEach(k=>{
+      const v=c.sgCat[k], w=Math.abs(v)/maxA*50;
+      const st = v>0?`left:50%;width:${w}%;background:var(--dv-blue);`
+              : v<0?`right:50%;width:${w}%;background:var(--dv-red);`
+              : `left:calc(50% - 2px);width:4px;background:var(--dv-neutral);`;
+      card.appendChild(el(`<div class="dvrow"><div class="d">${CAT_NOME[k]}</div>
+        <div class="dvtrack"><div class="zero"></div><div class="dvbar" style="${st}"></div></div>
+        <div class="n ${v>=0?'pos':'neg'}">${sgn(v,1)}</div></div>`));
+    });
+    body.appendChild(card);
+  }
+
+  const list=el('<div class="card"><h2>Buca per buca</h2></div>');
+  A.bucheCalc.forEach(b=>{
+    list.appendChild(el(`<div class="listitem">
+      <div>Buca ${b.buca} · par ${b.par}${b.distanza?` · ${b.distanza} m`:''}
+        <div class="meta">${b.putt} putt${b.girHit?' · green in regulation':''}</div></div>
+      <div style="text-align:right"><span class="badge">${b.score}</span>
+        ${b.sg!==null?`<div class="meta ${b.sg>=0?'pos':'neg'}" style="margin-top:3px">${sgn(b.sg,1)}</div>`:''}</div></div>`));
+  });
+  body.appendChild(list);
+
+  const mod=el('<button class="btn secondary">✏️ Correggi questo giro</button>');
+  mod.onclick=()=>push('modificaGiro',{id:g.id});
+  body.appendChild(mod);
+
+  const del=el('<button class="btn danger">Elimina questo giro</button>');
+  del.onclick=()=>{ if(confirm('Eliminare questo giro?\n\nNon viene distrutto: resta nelle copie automatiche e, sul repository, il file viene spostato fra i cancellati.')){
+    eliminaGiroLocale(g); nav=[{view:'home'}]; render(); } };
+  body.appendChild(del);
+  return {header:'Riepilogo giro', body};
+};
+
+/* ---------------- CORREZIONE DI UN GIRO SALVATO ---------------- */
+function trovaGiro(id){ return LS.get('hcp_giri',[]).find(g=>g.id===id); }
+function salvaGiro(g, senzaMarca){
+  if(!senzaMarca) marcaModifica(g);
+  const giri=LS.get('hcp_giri',[]); const i=giri.findIndex(x=>x.id===g.id);
+  if(i>=0){ giri[i]=g; LS.set('hcp_giri',giri); idbFlush(); }
+}
+
+VIEWS.modificaGiro = function(p){
+  const g=trovaGiro(p.id);
+  const body=el('<div></div>');
+  if(!g){ body.appendChild(el('<div class="empty">Giro non trovato.</div>')); return {header:'Correggi',body}; }
+  const A=analizzaGiro(g,'tour');
+  body.appendChild(el(`<div class="hint">Tocca la buca da correggere. Ogni modifica ricalcola punteggio e
+    strokes gained. Prima di modificare viene salvata una copia automatica recuperabile da "Backup".</div>`));
+  const card=el('<div class="card"><h2>Buche</h2></div>');
+  A.bucheCalc.forEach(b=>{
+    const it=el(`<div class="listitem"><div>Buca ${b.buca} · par ${b.par}
+      <div class="meta">${b.colpi.length} colpi registrati${b.distanza?` · ${b.distanza} m`:''}</div></div>
+      <span class="badge">${b.score}</span></div>`);
+    it.onclick=()=>push('modificaBuca',{id:g.id, i:b.buca-1});
+    card.appendChild(it);
+  });
+  body.appendChild(card);
+  return {header:'Correggi giro', body};
+};
+
+VIEWS.modificaBuca = function(p){
+  const g=trovaGiro(p.id);
+  const body=el('<div></div>');
+  if(!g){ body.appendChild(el('<div class="empty">Giro non trovato.</div>')); return {header:'Correggi',body}; }
+  const b=g.buche[p.i];
+  const bastoni=LS.get('hcp_bastoni_v2',BASTONI_DEFAULT);
+  const optLie=v=>LIE_OPZ.map(l=>`<option value="${l.k}" ${l.k===v?'selected':''}>${l.n}</option>`).join('');
+  const optBast=v=>bastoni.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('');
+
+  body.appendChild(el(`<div class="card"><h2>Buca ${p.i+1}</h2>
+    <div class="row"><div><label>Par</label>
+      <select id="mPar">${[3,4,5,6].map(x=>`<option ${x===b.par?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div><label>Distanza (m)</label><input type="number" id="mDist" value="${b.distanza??''}"></div></div></div>`));
+
+  const lista=el('<div class="card"><h2>Colpi</h2></div>');
+  function ridisegna(){
+    lista.querySelectorAll('.colpoRow').forEach(x=>x.remove());
+    b.colpi.forEach((c,i)=>{
+      const row=el(`<div class="colpoRow" style="border-bottom:1px solid var(--bordo);padding:10px 0;">
+        <div style="font-size:12px;color:var(--grigio);margin-bottom:6px;font-weight:600;">Colpo ${i+1}</div>
+        <div class="row" style="margin-bottom:6px;">
+          <div><select class="cLie">${optLie(c.lie)}</select></div>
+          <div><input type="number" step="0.1" class="cDist" value="${c.distM}" placeholder="m"></div>
+        </div>
+        <div class="row" style="margin-bottom:0;">
+          <div><select class="cBast">${optBast(c.bastone)}</select></div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn small cPen ${c.penalita?'':'secondary'}" style="margin:0;padding:10px;font-size:13px;background:${c.penalita?'var(--rosso)':''};color:${c.penalita?'#fff':''}">${c.penalita?'+1 pen.':'no pen.'}</button>
+            <button class="btn small cDel secondary" style="margin:0;padding:10px;font-size:13px;">Elimina</button>
+          </div>
+        </div></div>`);
+      row.querySelector('.cLie').onchange=e=>{ c.lie=e.target.value; };
+      row.querySelector('.cDist').onchange=e=>{ c.distM=parseFloat(e.target.value)||0; };
+      row.querySelector('.cBast').onchange=e=>{ c.bastone=e.target.value; };
+      row.querySelector('.cPen').onclick=()=>{ c.penalita=!c.penalita; ridisegna(); };
+      row.querySelector('.cDel').onclick=()=>{ if(confirm(`Eliminare il colpo ${i+1}?`)){ b.colpi.splice(i,1); ridisegna(); } };
+      lista.appendChild(row);
+    });
+    const pen=b.colpi.reduce((s,c)=>s+(c.penalita?1:0),0);
+    tot.textContent=`Totale buca: ${b.colpi.length+pen} colpi`;
+  }
+  const tot=el('<div class="hint" style="margin-top:12px;font-weight:700;color:var(--testo)"></div>');
+  const add=el('<button class="btn ghost" style="margin-top:10px">+ Aggiungi un colpo in fondo</button>');
+  add.onclick=()=>{ const u=b.colpi[b.colpi.length-1];
+    b.colpi.push({lie:u?u.lie:'fairway', distM:u?Math.max(0,Math.round(u.distM/2)):50,
+                  bastone:u?u.bastone:'PW', penalita:false}); ridisegna(); };
+  body.appendChild(lista); lista.appendChild(tot); lista.appendChild(add);
+  ridisegna();
+
+  const save=el('<button class="btn big">Salva le correzioni</button>');
+  save.onclick=async()=>{
+    b.par=parseInt(body.querySelector('#mPar').value,10);
+    const d=body.querySelector('#mDist').value;
+    b.distanza = d===''?null:parseFloat(d);
+    if(b.colpi.some(c=>!(c.distM>=0))){ alert('Una distanza non è valida.'); return; }
+    await snapshotSalva();
+    salvaGiro(g); back();
+  };
+  body.appendChild(save);
+  return {header:`Buca ${p.i+1}`, body};
+};
+
+/* ---------------- STATISTICHE ---------------- */
+VIEWS.statistiche = function(){
+  const tutti=LS.get('hcp_giri',[]).filter(g=>g.buche&&g.buche.length);
+  const body=el('<div></div>');
+  if(!tutti.length){
+    body.appendChild(el(`<div class="card"><h2>Ancora nessun dato</h2>
+      <div class="hint">Le statistiche compaiono qui appena completi il primo giro.</div></div>`));
+    const b=el('<button class="btn">+ Registra il primo giro</button>');
+    b.onclick=()=>push('nuovoGiro'); body.appendChild(b);
+    return {header:'Statistiche', body};
+  }
+
+  /* ---- filtri ---- */
+  const circoli=[...new Set(tutti.map(g=>g.circolo))], tees=[...new Set(tutti.map(g=>g.tee))];
+  const f=el(`<div class="filters">
+    <div class="full"><label>Circolo</label><select id="fC"><option value="__tutti__">Tutti i circoli</option>
+      ${circoli.map(c=>`<option value="${esc(c)}" ${STAT_F.circolo===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+    <div><label>Tee</label><select id="fT"><option value="__tutti__">Tutti</option>
+      ${tees.map(t=>`<option value="${esc(t)}" ${STAT_F.tee===t?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
+    <div><label>Periodo</label><select id="fP">
+      <option value="tutti" ${STAT_F.periodo==='tutti'?'selected':''}>Tutti i giri</option>
+      <option value="5" ${STAT_F.periodo==='5'?'selected':''}>Ultimi 5</option>
+      <option value="10" ${STAT_F.periodo==='10'?'selected':''}>Ultimi 10</option></select></div>
+    <div class="full"><label>Confronto strokes gained</label><select id="fB">
+      <option value="tour" ${STAT_F.baseline==='tour'?'selected':''}>PGA Tour (dato pubblicato)</option>
+      <option value="scratch" ${STAT_F.baseline==='scratch'?'selected':''}>Giocatore scratch (stima)</option>
+      <option value="media" ${STAT_F.baseline==='media'?'selected':''}>La tua media</option></select></div>
+  </div>`);
+  f.querySelector('#fC').onchange=e=>{STAT_F.circolo=e.target.value; render();};
+  f.querySelector('#fT').onchange=e=>{STAT_F.tee=e.target.value; render();};
+  f.querySelector('#fP').onchange=e=>{STAT_F.periodo=e.target.value; render();};
+  f.querySelector('#fB').onchange=e=>{STAT_F.baseline=e.target.value; render();};
+  body.appendChild(f);
+
+  let sel=tutti.slice().sort((a,b)=>(a.data||'')<(b.data||'')?-1:1);
+  if(STAT_F.circolo!=='__tutti__') sel=sel.filter(g=>g.circolo===STAT_F.circolo);
+  if(STAT_F.tee!=='__tutti__') sel=sel.filter(g=>g.tee===STAT_F.tee);
+  if(STAT_F.periodo!=='tutti') sel=sel.slice(-parseInt(STAT_F.periodo,10));
+  if(!sel.length){
+    body.appendChild(el('<div class="card"><h2>Nessun giro</h2><div class="hint">Nessun giro corrisponde ai filtri. Allarga la selezione.</div></div>'));
+    return {header:'Statistiche', body};
+  }
+
+  const baseCalc = STAT_F.baseline==='scratch' ? 'scratch' : 'tour';
+  const A=sel.map(g=>analizzaGiro(g, baseCalc));
+  const completi=A.filter(g=>g.completo);
+  const nG=A.length, totB=A.reduce((s,g)=>s+g.calc.nBuche,0);
+  const sum=k=>A.reduce((s,g)=>s+g.calc[k],0);
+  const scoreMedio=sum('score')/nG, diffMedia=(sum('score')-sum('par'))/nG;
+  const girPct=Math.round(100*sum('gir')/totB), puttB=sum('putt')/totB;
+  const scrOpp=sum('scrOpp'), scrOk=sum('scrOk');
+  const scrPct=scrOpp>0?Math.round(100*scrOk/scrOpp):null;
+  const etichetta = STAT_F.baseline==='scratch' ? 'a un giocatore scratch (stima)' : 'al PGA Tour';
+
+  /* ---- 4 indicatori, fermi sopra i tre pannelli ---- */
+  body.appendChild(el(`<div class="hint" style="margin-top:-4px;">${nG} giri · ${totB} buche${completi.length<nG?` · ${completi.length} con dettaglio colpo per colpo`:''}</div>`));
+  body.appendChild(el(`<div class="kpigrid">
+    <div class="kpi"><div class="lab">Punteggio medio</div><div class="v">${scoreMedio.toFixed(1)}</div>
+      <div class="sub">${sgn(diffMedia,1)} dal par</div></div>
+    <div class="kpi"><div class="lab">Green in regulation</div><div class="v">${girPct}<span class="u">%</span></div>
+      <div class="sub">${sum('gir')} su ${totB} buche</div></div>
+    <div class="kpi"><div class="lab">Putt per buca</div><div class="v">${puttB.toFixed(2)}</div>
+      <div class="sub">≈ ${(puttB*18).toFixed(0)} su 18 buche</div></div>
+    <div class="kpi"><div class="lab">Scrambling</div><div class="v">${scrPct===null?'—':scrPct+'%'}</div>
+      <div class="sub">${scrOpp===0?'sempre in green':`${scrOk} par salvati su ${scrOpp}`}</div></div>
+  </div>`));
+
+  /* ---- barre di navigazione ---- */
+  const TABS=[{k:'sg',n:'Strokes<br>gained'},{k:'par',n:'Punteggio<br>e base'},
+              {k:'club',n:'Bastoni'},{k:'x',n:'Incroci'}];
+  if(!STAT_F.tab) STAT_F.tab='sg';
+  const bar=el(`<div class="tabbar">${TABS.map(t=>`<button data-k="${t.k}" class="${STAT_F.tab===t.k?'on':''}">${t.n}</button>`).join('')}</div>`);
+  const pager=el('<div class="pager"></div>');
+  body.appendChild(bar); body.appendChild(pager);
+
+  const dvRow=(lab,v,maxA,dec)=>{
+    const w=Math.abs(v)/maxA*50;
+    const st=v>0?`left:50%;width:${w}%;background:var(--dv-blue);`
+           :v<0?`right:50%;width:${w}%;background:var(--dv-red);`
+           :`left:calc(50% - 2px);width:4px;background:var(--dv-neutral);`;
+    return `<div class="dvrow"><div class="d">${lab}</div>
+      <div class="dvtrack"><div class="zero"></div><div class="dvbar" style="${st}"></div></div>
+      <div class="n ${v>=0?'pos':'neg'}">${sgn(v,dec===undefined?1:dec)}</div></div>`;
+  };
+  const etichette = A.map(g=>fmtDataBreve(g.data));
+
+  /* ================= PANNELLO 1: STROKES GAINED ================= */
+  const p1=el('<div class="pane"></div>');
+  if(!completi.length){
+    p1.appendChild(el(`<div class="card"><h2>Strokes gained</h2>
+      <div class="hint">Nessuno dei giri selezionati ha il dettaglio colpo per colpo.</div></div>`));
+  } else {
+    const cats=['tee','approccio','corto','putting'];
+    const nC=completi.length;
+    const perGiro=cats.reduce((o,k)=>(o[k]=completi.reduce((s,g)=>s+g.calc.sgCat[k],0)/nC,o),{});
+    const mediaTot=cats.reduce((s,k)=>s+perGiro[k],0);
+    const etC=completi.map(g=>fmtDataBreve(g.data));
+
+    if(STAT_F.baseline==='media'){
+      const vals=completi.map((g,i)=>({x:etC[i], y:g.calc.sgTot-mediaTot}));
+      const c=el(`<div class="card"><h2>Ogni giro rispetto alla tua media</h2>
+        <div class="hint">La media dei giri è zero per costruzione: conta lo scarto del singolo giro.</div>
+        ${svgLinea(vals,{h:110, zero:true, colore:'var(--dv-blue)', fmt:v=>sgn(v,1), aria:'scarto dalla media per giro'})}</div>`);
+      completi.forEach((g,i)=>c.appendChild(el(dvRow(etC[i], g.calc.sgTot-mediaTot, Math.max(0.5,...completi.map(x=>Math.abs(x.calc.sgTot-mediaTot)))))));
+      p1.appendChild(c);
+    } else {
+      const maxA=Math.max(0.5,...cats.map(k=>Math.abs(perGiro[k])));
+      const c=el(`<div class="card"><h2>Strokes gained per categoria</h2>
+        <div class="hint">Media per giro rispetto ${etichetta}. Sopra lo zero guadagni colpi, sotto li perdi.</div>
+        <div class="legend"><span class="it"><span class="sw" style="background:var(--dv-blue)"></span>Guadagni</span>
+          <span class="it"><span class="sw" style="background:var(--dv-red)"></span>Perdi</span></div>
+        ${cats.map(k=>dvRow(CAT_NOME[k], perGiro[k], maxA)).join('')}
+        <div class="stcap" style="margin-top:10px">Totale per giro:
+          <b class="${mediaTot>=0?'pos':'neg'}">${sgn(mediaTot,1)}</b> colpi rispetto ${etichetta}.</div>
+        ${STAT_F.baseline==='scratch'?`<div class="hint" style="margin-top:8px">⚠️ La baseline scratch è una <b>ricostruzione</b>. Vedi "Metodo e fonti".</div>`:''}</div>`);
+      p1.appendChild(c);
+
+      p1.appendChild(el(`<div class="card"><h2>Andamento nel tempo</h2>
+        <div class="hint">Strokes gained totale, giro per giro.</div>
+        ${svgLinea(completi.map((g,i)=>({x:etC[i], y:g.calc.sgTot})),
+          {h:112, zero:true, colore:'var(--dv-blue)', fmt:v=>sgn(v,1), aria:'strokes gained totale nel tempo'})}</div>`));
+
+      const tuttiV=cats.flatMap(k=>completi.map(g=>g.calc.sgCat[k]));
+      const mn=Math.min(0,...tuttiV), mx=Math.max(0,...tuttiV);
+      p1.appendChild(el(`<div class="card"><h2>Andamento per categoria</h2>
+        <div class="hint">Stessa scala su tutti e quattro, così si vede subito quale pesa di più.</div>
+        <div class="smgrid">${cats.map((k,idx)=>boxTrend(CAT_NOME[k],
+          completi.map((g,i)=>({x:etC[i], y:g.calc.sgCat[k]})),
+          ['var(--dv-blue)','var(--dv-orange)','var(--dv-aqua)','var(--dv-red)'][idx],
+          {min:mn, max:mx, fmt:v=>sgn(v,1)})).join('')}</div>
+        <div class="stcap">Le etichette mostrano primo e ultimo giro del periodo.</div></div>`));
+    }
+
+    const fasce=statFasce(completi);
+    if(fasce.length) p1.appendChild(el(`<div class="card"><h2>Approcci per fascia di distanza</h2>
+      <div class="hint">Da dove parte il colpo, quanti green prendi da lì, quanto lasci alla buca.</div>
+      <table class="stat"><thead><tr><th>Da</th><th class="n">Colpi</th><th class="n">Green</th>
+        <th class="n">Lascia</th><th class="n">SG</th></tr></thead><tbody>
+        ${fasce.map(x=>`<tr><td>${x.label}</td><td class="n">${x.n}</td>
+          <td class="n">${Math.round(100*x.green/x.n)}%</td>
+          <td class="n">${x.nProx?(x.prox/x.nProx).toFixed(1)+' m':'—'}</td>
+          <td class="n ${x.sg>=0?'pos':'neg'}">${sgn(x.sg/nC,2)}</td></tr>`).join('')}
+      </tbody></table><div class="stcap">SG per giro. "Lascia" vale solo quando il green viene preso.</div></div>`));
+
+    const P=statPutting(completi);
+    if(P.fasce.length){
+      const tp=P.bucheConPutt?100*P.treputt/P.bucheConPutt:0;
+      p1.appendChild(el(`<div class="card"><h2>Putting per distanza</h2>
+        <div class="hint">Tre putt sul <b>${tp.toFixed(1)}%</b> delle buche (${P.treputt} su ${P.bucheConPutt}).</div>
+        <table class="stat"><thead><tr><th>Distanza</th><th class="n">Putt</th>
+          <th class="n">Imbucati</th><th class="n">SG</th></tr></thead><tbody>
+          ${P.fasce.map(x=>`<tr><td>${x.label}</td><td class="n">${x.n}</td>
+            <td class="n">${Math.round(100*x.imbucati/x.n)}%</td>
+            <td class="n ${x.sg>=0?'pos':'neg'}">${sgn(x.sg/nC,2)}</td></tr>`).join('')}
+        </tbody></table></div>`));
+    }
+  }
+
+  /* ================= PANNELLO 2: PUNTEGGIO E BASE ================= */
+  const p2=el('<div class="pane"></div>');
+  const diffs=A.map(g=>g.calc.score-g.calc.par);
+  p2.appendChild(el(`<div class="card"><h2>Andamento del punteggio</h2>
+    <div class="hint">Colpi sopra o sotto il par, giro per giro. Più la linea scende, meglio è.</div>
+    ${svgLinea(A.map((g,i)=>({x:etichette[i], y:diffs[i]})),
+      {h:112, zero:true, colore:'var(--dv-blue)', fmt:v=>sgn(v,0), aria:'punteggio sul par nel tempo'})}</div>`));
+
+  const maxAbs=Math.max(1,...diffs.map(Math.abs));
+  const cd=el(`<div class="card"><h2>Punteggio rispetto al par</h2>
+    <div class="hint">Un giro per riga, dal più vecchio al più recente.</div></div>`);
+  A.forEach((g,i)=>{
+    const d=diffs[i], w=Math.abs(d)/maxAbs*50;
+    const st=d>0?`left:50%;width:${w}%;background:var(--dv-red);`:d<0?`right:50%;width:${w}%;background:var(--dv-blue);`:`left:calc(50% - 2px);width:4px;background:var(--dv-neutral);`;
+    cd.appendChild(el(`<div class="dvrow"><div class="d">${etichette[i]}</div>
+      <div class="dvtrack"><div class="zero"></div><div class="dvbar" style="${st}"></div></div>
+      <div class="n">${d===0?'PAR':sgn(d,0)}</div></div>`));
+  });
+  p2.appendChild(cd);
+
+  p2.appendChild(el(`<div class="card"><h2>Andamento di green e putt</h2>
+    <div class="smgrid">
+      ${boxTrend('Green in regulation', A.map((g,i)=>({x:etichette[i], y:100*g.calc.gir/g.calc.nBuche})),
+        'var(--dv-aqua)', {zero:false, fmt:v=>Math.round(v)+'%'})}
+      ${boxTrend('Putt per buca', A.map((g,i)=>({x:etichette[i], y:g.calc.putt/g.calc.nBuche})),
+        'var(--dv-orange)', {zero:false, fmt:v=>v.toFixed(2)})}
+    </div></div>`));
+
+  let eagle=0,birdie=0,parc=0,bogey=0,doppio=0;
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    if(b.diff<=-2)eagle++; else if(b.diff===-1)birdie++; else if(b.diff===0)parc++;
+    else if(b.diff===1)bogey++; else doppio++;}));
+  const sotto=eagle+birdie, sopra=bogey+doppio, pc=v=>v/totB*100;
+  p2.appendChild(el(`<div class="card"><h2>Come si chiudono le buche</h2>
+    <div class="hint">Su ${totB} buche giocate.</div>
+    <div class="legend"><span class="it"><span class="sw" style="background:var(--dv-blue)"></span>Sotto par</span>
+      <span class="it"><span class="sw" style="background:var(--dv-neutral)"></span>Par</span>
+      <span class="it"><span class="sw" style="background:var(--dv-red)"></span>Sopra par</span></div>
+    <div class="strack">
+      ${sotto>0?`<div class="sseg" style="width:${pc(sotto)}%;background:var(--dv-blue)"></div>`:''}
+      ${parc>0?`<div class="sseg" style="width:${pc(parc)}%;background:var(--dv-neutral)"></div>`:''}
+      ${sopra>0?`<div class="sseg" style="width:${pc(sopra)}%;background:var(--dv-red)"></div>`:''}</div>
+    <table class="stat" style="margin-top:12px;">
+      <thead><tr><th>Risultato</th><th class="n">Buche</th><th class="n">%</th></tr></thead><tbody>
+      <tr><td>Eagle o meglio</td><td class="n">${eagle}</td><td class="n">${pc(eagle).toFixed(1)}%</td></tr>
+      <tr><td>Birdie</td><td class="n">${birdie}</td><td class="n">${pc(birdie).toFixed(1)}%</td></tr>
+      <tr><td>Par</td><td class="n">${parc}</td><td class="n">${pc(parc).toFixed(1)}%</td></tr>
+      <tr><td>Bogey</td><td class="n">${bogey}</td><td class="n">${pc(bogey).toFixed(1)}%</td></tr>
+      <tr><td>Doppio o peggio</td><td class="n">${doppio}</td><td class="n">${pc(doppio).toFixed(1)}%</td></tr>
+      </tbody></table></div>`));
+
+  if(completi.length){
+    const F=statFairway(completi), S=statSand(completi);
+    p2.appendChild(el(`<div class="card"><h2>Precisione dal tee e bunker</h2>
+      <table class="stat"><tbody>
+        <tr><td>Fairway presi</td><td class="n">${F.tot?Math.round(100*F.presi/F.tot)+'%':'—'}</td>
+          <td class="n" style="color:var(--grigio)">${F.presi} su ${F.tot}</td></tr>
+        <tr><td>Sand save</td><td class="n">${S.opp?Math.round(100*S.ok/S.opp)+'%':'—'}</td>
+          <td class="n" style="color:var(--grigio)">${S.ok} su ${S.opp}</td></tr>
+      </tbody></table>
+      <div class="stcap">Fairway sui par 4 e 5. Sand save: buche con un colpo dalla sabbia entro i 30 yard, chiuse in par o meglio.</div></div>`));
+  }
+
+  const perTipo=statPerTipo(A);
+  if(perTipo.length>1) p2.appendChild(el(`<div class="card"><h2>Per tipo di giro</h2>
+    <div class="hint">Se il numero in gara è peggiore dell'allenamento, il problema non è tecnico.</div>
+    <table class="stat"><thead><tr><th>Tipo</th><th class="n">Giri</th>
+      <th class="n">Sul par</th><th class="n">SG medio</th></tr></thead><tbody>
+      ${perTipo.map(t=>`<tr><td>${esc(t.tipo)}</td><td class="n">${t.n}</td>
+        <td class="n">${sgn(t.mediaPar,1)}</td>
+        <td class="n ${t.mediaSg===null?'':(t.mediaSg>=0?'pos':'neg')}">${t.mediaSg===null?'—':sgn(t.mediaSg,1)}</td></tr>`).join('')}
+    </tbody></table></div>`));
+
+  const cSel=[...new Set(sel.map(g=>g.circolo))];
+  if(cSel.length===1){
+    const pb=statPerBuca(A).filter(x=>x.diffMedia>0).slice(0,6);
+    const cb=el(`<div class="card"><h2>Buche che costano di più</h2>
+      <div class="hint">Media dei colpi sopra il par su ${esc(cSel[0])}.</div></div>`);
+    if(!pb.length) cb.appendChild(el('<div class="hint">Nessuna buca sopra il par in media.</div>'));
+    else { const mx=Math.max(...pb.map(x=>x.diffMedia));
+      pb.forEach(x=>cb.appendChild(el(`<div class="hbrow wide">
+        <div class="l">Buca ${x.buca} <span style="opacity:.7">· par ${x.par}</span></div>
+        <div class="hbtrack"><div class="hbfill" style="width:${x.diffMedia/mx*100}%;background:var(--dv-red)"></div></div>
+        <div class="n">+${x.diffMedia.toFixed(1)}</div></div>`))); }
+    p2.appendChild(cb);
+  } else {
+    p2.appendChild(el(`<div class="card"><h2>Buche che costano di più</h2>
+      <div class="hint">Seleziona un singolo circolo: confrontare la "buca 7" di campi diversi non avrebbe senso.</div></div>`));
+  }
+
+  /* ================= PANNELLO 3: BASTONI ================= */
+  const p3=el('<div class="pane"></div>');
+  const bast=statBastoni(sel);
+  if(!bast.length){
+    p3.appendChild(el('<div class="card"><h2>Bastoni</h2><div class="hint">Nessun colpo registrato.</div></div>'));
+  } else {
+    const mx=Math.max(...bast.map(b=>b.usi));
+    const cbs=el(`<div class="card"><h2>Quanto usi ogni bastone</h2>
+      <div class="hint">Numero di colpi nel periodo selezionato.</div></div>`);
+    bast.forEach(b=>cbs.appendChild(el(`<div class="hbrow">
+      <div class="l">${esc(b.bastone)}</div>
+      <div class="hbtrack"><div class="hbfill" style="width:${b.usi/mx*100}%"></div></div>
+      <div class="n">${b.usi}</div></div>`)));
+    p3.appendChild(cbs);
+
+    const conD=bast.filter(b=>b.distMedia!==null && b.bastone!=='Putter');
+    if(conD.length){
+      const maxD=Math.max(...conD.map(b=>b.dMax||0));
+      const cr=el(`<div class="card"><h2>Distanza e dispersione</h2>
+        <div class="hint">Il punto è la media, la barra chiara va dal 10° al 90° percentile: più è larga,
+          meno il bastone è prevedibile. È la lettura che conta per scegliere in campo.</div></div>`);
+      conD.forEach(b=>{
+        const lo=(b.p10!==null?b.p10:b.dMin)||0, hi=(b.p90!==null?b.p90:b.dMax)||0;
+        cr.appendChild(el(`<div class="rngrow">
+          <div class="l">${esc(b.bastone)}</div>
+          <div class="rngtrack">
+            <div class="rngline" style="left:0;right:0"></div>
+            <div class="rngspan" style="left:${lo/maxD*100}%;width:${Math.max(1,(hi-lo)/maxD*100)}%"></div>
+            <div class="rngdot" style="left:${b.distMedia/maxD*100}%"></div>
+          </div>
+          <div class="n">${b.distMedia} m</div></div>`));
+      });
+      cr.appendChild(el(`<table class="stat" style="margin-top:10px">
+        <thead><tr><th>Bastone</th><th class="n">Colpi</th><th class="n">Media</th>
+          <th class="n">Dispersione</th><th class="n">10°–90°</th></tr></thead><tbody>
+        ${conD.map(b=>`<tr><td>${esc(b.bastone)}</td><td class="n">${b.usi}</td>
+          <td class="n">${b.distMedia} m</td>
+          <td class="n">${b.disp!==null?'± '+b.disp+' m':'—'}</td>
+          <td class="n">${b.p10!==null?b.p10+'–'+b.p90:'—'}</td></tr>`).join('')}
+        </tbody></table>
+        <div class="stcap">La dispersione è lo scarto tipo delle distanze: due terzi dei colpi cadono
+          entro quel margine dalla media. Compare da 3 colpi in su, i percentili da 5.</div>`));
+      p3.appendChild(cr);
+    }
+
+    // andamento della distanza del driver
+    const serieDrv=sel.map(g=>{
+      let t=0,n=0;
+      (g.buche||[]).forEach(b=>(b.colpi||[]).forEach((c,i)=>{
+        if(c.bastone!=='Driver') return;
+        const fine=b.colpi[i+1]?b.colpi[i+1].distM:0;
+        if(c.distM-fine>0){ t+=c.distM-fine; n++; }
+      }));
+      return {data:g.data, media:n?t/n:null};
+    }).filter(x=>x.media!==null);
+    if(serieDrv.length>=3){
+      p3.appendChild(el(`<div class="card"><h2>Andamento del driver</h2>
+        <div class="hint">Distanza media percorsa dal drive, giro per giro.</div>
+        ${svgLinea(serieDrv.map(x=>({x:fmtDataBreve(x.data), y:x.media})),
+          {h:112, zero:false, colore:'var(--dv-blue)', fmt:v=>Math.round(v)+' m', aria:'distanza media del driver nel tempo'})}</div>`));
+    }
+  }
+
+  /* ================= PANNELLO 4: INCROCI ================= */
+  const p4=el('<div class="pane"></div>');
+  const CATN={tee:'Colpo dal tee',approccio:'Approccio',corto:'Gioco corto',putting:'Putting'};
+
+  const MP = completi.length ? statMiglioriPeggiori(completi) : null;
+  if(!MP){
+    p4.appendChild(el(`<div class="card"><h2>Cosa cambia nei giri buoni</h2>
+      <div class="hint">Servono almeno 4 giri con il dettaglio colpo per colpo per dividerli in metà
+        migliore e metà peggiore. Al momento ne hai ${completi.length}.</div></div>`));
+  } else {
+    const cats=['tee','approccio','corto','putting'];
+    const delta=cats.map(c=>({c, v:MP.best[c]-MP.worst[c]}));
+    const mx=Math.max(0.3,...delta.map(d=>Math.abs(d.v)));
+    const top=delta.slice().sort((a,b)=>b.v-a.v)[0];
+    p4.appendChild(el(`<div class="card"><h2>Cosa cambia nei giri buoni</h2>
+      <div class="hint">Confronto fra i tuoi <b>${MP.k} giri migliori</b> (media ${sgn(MP.parBest,1)} sul par)
+        e i <b>${MP.k} peggiori</b> (${sgn(MP.parWorst,1)}). La barra mostra quanti colpi guadagni in più
+        nei giri buoni, categoria per categoria: la più lunga è ciò che davvero fa la differenza.</div>
+      ${delta.map(d=>{
+        const w=Math.abs(d.v)/mx*50;
+        const st=d.v>0?`left:50%;width:${w}%;background:var(--dv-blue);`
+              :d.v<0?`right:50%;width:${w}%;background:var(--dv-red);`
+              :`left:calc(50% - 2px);width:4px;background:var(--dv-neutral);`;
+        return `<div class="dvrow"><div class="d">${CATN[d.c]}</div>
+          <div class="dvtrack"><div class="zero"></div><div class="dvbar" style="${st}"></div></div>
+          <div class="n ${d.v>=0?'pos':'neg'}">${sgn(d.v,1)}</div></div>`;}).join('')}
+      <table class="stat" style="margin-top:12px">
+        <thead><tr><th>Categoria</th><th class="n">Giri buoni</th><th class="n">Giri brutti</th></tr></thead>
+        <tbody>${cats.map(c=>`<tr><td>${CATN[c]}</td>
+          <td class="n ${MP.best[c]>=0?'pos':'neg'}">${sgn(MP.best[c],1)}</td>
+          <td class="n ${MP.worst[c]>=0?'pos':'neg'}">${sgn(MP.worst[c],1)}</td></tr>`).join('')}</tbody></table>
+      <div class="stcap">Quando giochi bene, il grosso del vantaggio arriva da: <b>${CATN[top.c]}</b>
+        (${sgn(top.v,1)} colpi). È lì che vale la pena capire cosa fai di diverso.</div></div>`));
+  }
+
+  if(completi.length){
+    const DT=statDaTee(completi);
+    if(DT.length){
+      const mxA=Math.max(...DT.map(x=>Math.abs(x.media)),0.3);
+      p4.appendChild(el(`<div class="card"><h2>Quanto costa mancare il fairway</h2>
+        <div class="hint">Par 4 e 5, raggruppati per dove finisce il colpo dal tee. Mette un numero
+          sulla differenza fra tenere il fairway e non tenerlo.</div>
+        ${DT.map(x=>{
+          const w=Math.abs(x.media)/mxA*50;
+          const st=x.media>0?`left:50%;width:${w}%;background:var(--dv-red);`
+                :x.media<0?`right:50%;width:${w}%;background:var(--dv-blue);`
+                :`left:calc(50% - 2px);width:4px;background:var(--dv-neutral);`;
+          return `<div class="dvrow"><div class="d">${LIE_NOME[x.lie]||x.lie}</div>
+            <div class="dvtrack"><div class="zero"></div><div class="dvbar" style="${st}"></div></div>
+            <div class="n">${sgn(x.media,2)}</div></div>`;}).join('')}
+        <table class="stat" style="margin-top:12px">
+          <thead><tr><th>Dove arriva</th><th class="n">Buche</th><th class="n">Sul par</th>
+            <th class="n">Green</th></tr></thead><tbody>
+          ${DT.map(x=>`<tr><td>${LIE_NOME[x.lie]||x.lie}</td><td class="n">${x.n}</td>
+            <td class="n">${sgn(x.media,2)}</td><td class="n">${Math.round(x.girPct)}%</td></tr>`).join('')}
+        </tbody></table></div>`));
+    }
+  }
+
+  const PP=statPerPar(A);
+  if(PP.length){
+    p4.appendChild(el(`<div class="card"><h2>Rendimento per tipo di buca</h2>
+      <div class="hint">I par 5 sono occasioni, i par 3 no: separarli dice dove stai lasciando colpi.</div>
+      <table class="stat"><thead><tr><th>Buca</th><th class="n">Giocate</th><th class="n">Sul par</th>
+        <th class="n">Green</th><th class="n">Putt</th></tr></thead><tbody>
+        ${PP.map(x=>`<tr><td>Par ${x.par}</td><td class="n">${x.n}</td>
+          <td class="n ${x.media<=0?'pos':'neg'}">${sgn(x.media,2)}</td>
+          <td class="n">${Math.round(x.girPct)}%</td><td class="n">${x.puttB.toFixed(2)}</td></tr>`).join('')}
+      </tbody></table></div>`));
+  }
+
+  const BL=statBlocchi(A);
+  if(BL.nGiri>0){
+    const b=BL.blocchi;
+    const peggio=b.slice().sort((x,y)=>y.parGiro-x.parGiro)[0];
+    const meglio=b.slice().sort((x,y)=>x.parGiro-y.parGiro)[0];
+    const uguali=Math.abs(peggio.parGiro-meglio.parGiro)<0.25;
+    p4.appendChild(el(`<div class="card"><h2>Il giro in sei blocchi da tre buche</h2>
+      <div class="hint">Colpi sopra il par per giro in ciascun blocco, su ${BL.nGiri} giri da 18 buche.
+        Serve a vedere se il giro si rompe sempre nello stesso punto: partenza fredda, calo dopo la
+        pausa alla nona, o cedimento finale.</div>
+      ${svgBarreDiv(b.map(x=>({x:x.nome, y:x.parGiro})), {h:132, fmt:v=>sgn(v,1), aria:'colpi sopra il par per blocco di tre buche'})}
+      <table class="stat" style="margin-top:10px">
+        <thead><tr><th>Buche</th><th class="n">Sul par</th><th class="n">Green</th>
+          <th class="n">Putt</th>${completi.length?'<th class="n">SG</th>':''}</tr></thead><tbody>
+        ${b.map(x=>`<tr><td>${x.nome}</td>
+          <td class="n ${x.parGiro<=0?'pos':'neg'}">${sgn(x.parGiro,1)}</td>
+          <td class="n">${Math.round(x.girPct)}%</td>
+          <td class="n">${x.puttB.toFixed(2)}</td>
+          ${completi.length?`<td class="n ${x.sgGiro>=0?'pos':'neg'}">${sgn(x.sgGiro,1)}</td>`:''}</tr>`).join('')}
+      </tbody></table>
+      <div class="stcap">${uguali
+        ? 'Nessun blocco spicca: il giro resta uniforme, senza un punto debole ricorrente.'
+        : `Il tratto più costoso è <b>${peggio.nome}</b> (${sgn(peggio.parGiro,1)} per giro), il migliore è <b>${meglio.nome}</b> (${sgn(meglio.parGiro,1)}).`}
+        Valori per giro, non per buca.</div></div>`));
+  }
+
+  const NV=statNove(A);
+  if(NV.length===2){
+    const d=NV[1].media-NV[0].media;
+    p4.appendChild(el(`<div class="card"><h2>Prima nove contro seconda nove</h2>
+      <div class="hint">${Math.abs(d)<0.03 ? 'Le due metà si equivalgono.' :
+        (d>0 ? `Sulla seconda nove giochi in media <b>${d.toFixed(2)} colpi a buca in più</b>: vale la pena chiedersi se è il campo o se è concentrazione.`
+             : `Sulla seconda nove giochi in media <b>${Math.abs(d).toFixed(2)} colpi a buca in meno</b>: parti lento e ti sciogli strada facendo.`)}</div>
+      <table class="stat"><thead><tr><th></th><th class="n">Buche</th><th class="n">Sul par</th>
+        <th class="n">Green</th><th class="n">Putt</th></tr></thead><tbody>
+        ${NV.map(x=>`<tr><td>${x.nome}</td><td class="n">${x.n}</td>
+          <td class="n ${x.media<=0?'pos':'neg'}">${sgn(x.media,2)}</td>
+          <td class="n">${Math.round(x.girPct)}%</td><td class="n">${x.puttB.toFixed(2)}</td></tr>`).join('')}
+      </tbody></table>
+      <div class="stcap">Solo giri da 18 buche.</div></div>`));
+  }
+
+  /* ---- montaggio e scorrimento ---- */
+  [p1,p2,p3,p4].forEach(x=>pager.appendChild(x));
+  const panes={sg:p1, par:p2, club:p3, x:p4};
+  function adatta(){ pager.style.height = (panes[STAT_F.tab].scrollHeight+6)+'px'; }
+  function vaiA(k, scorri){
+    STAT_F.tab=k;
+    bar.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.k===k));
+    if(scorri!==false){ const i=TABS.findIndex(t=>t.k===k); pager.scrollTo({left:i*pager.clientWidth, behavior:'smooth'}); }
+    adatta();
+  }
+  bar.onclick=e=>{ const b=e.target.closest('button'); if(b) vaiA(b.dataset.k, true); };
+  let tmr=null;
+  pager.onscroll=()=>{ clearTimeout(tmr); tmr=setTimeout(()=>{
+    const i=Math.round(pager.scrollLeft/Math.max(1,pager.clientWidth));
+    const k=(TABS[i]||TABS[0]).k;
+    if(k!==STAT_F.tab) vaiA(k, false);
+  }, 90); };
+  requestAnimationFrame(()=>{
+    const i=TABS.findIndex(t=>t.k===STAT_F.tab);
+    pager.scrollLeft = i*pager.clientWidth;
+    adatta();
+    setTimeout(adatta, 120);
+  });
+  window.addEventListener('resize', adatta, {once:true});
+
+  return {header:'Statistiche', body};
+};
+
+/* ---------------- ARCHIVIO ---------------- */
+VIEWS.archivio = function(){
+  const arch=LS.get('hcp_archivio_v3',ARCHIVIO_DEFAULT);
+  const body=el('<div></div>');
+  Object.keys(arch).forEach(n=>{
+    const a=arch[n];
+    const card=el(`<div class="card"><h2>${esc(n)}</h2>
+      <div class="hint">${esc(a.fonte||'')}</div>
+      <div class="hint">Par ${a.par.reduce((s,x)=>s+x,0)} · ${a.par.length} buche</div></div>`);
+    Object.keys(a.tees).forEach(t=>{
+      const T=a.tees[t];
+      card.appendChild(el(`<div class="hint"><b>${esc(t)}</b>: ${T.d.reduce((s,x)=>s+x,0)} m${T.cr?` · CR ${T.cr} / Slope ${T.sr}`:' · CR/Slope non verificati'}</div>`));
+    });
+    body.appendChild(card);
+  });
+  body.appendChild(el(`<div class="installtip">Le distanze sono quelle delle carte ufficiali dei circoli.
+    Se durante il giro una buca ha una distanza diversa (tee avanzato, bandiera corta), puoi correggerla
+    direttamente in cima alla schermata della buca: vale solo per quel giro.</div>`));
+  return {header:'Archivio campi', body};
+};
+
+/* ---------------- METODO E FONTI ---------------- */
+VIEWS.metodo = function(){
+  const body=el(`<div>
+    <div class="card"><h2>Come si calcola</h2><div class="metodo">
+      Lo <b>strokes gained</b> di un colpo è: colpi attesi da dove parte la palla, meno colpi attesi da dove
+      arriva, meno 1 (il colpo giocato), meno le eventuali penalità. Se il valore è positivo hai guadagnato
+      terreno rispetto al riferimento, se è negativo l'hai perso.<br><br>
+      Le quattro categorie seguono la convenzione standard: <b>colpo dal tee</b> sui par 4 e 5,
+      <b>approccio</b> oltre i 30 yard fuori dal green, <b>gioco corto</b> entro i 30 yard fuori dal green,
+      <b>putting</b> sul green. Il colpo dal tee di un par 3 conta come approccio.
+    </div></div>
+
+    <div class="card"><h2>Baseline PGA Tour — dato pubblicato</h2><div class="metodo">
+      Tabella dei colpi attesi per distanza e lie da <b>Broadie, M., "Assessing Golfer Performance on the
+      PGA TOUR", Interfaces 42(2):146–165, 2012</b>, Tabella B.1, costruita su oltre 8 milioni di colpi
+      rilevati da ShotLink fra il 2003 e il 2010. Il putting viene da <b>Broadie, "Putts Gained: Measuring
+      Putting on the PGA TOUR", 2011</b>, Figura 1.<br><br>
+      Le tabelle sono in <b>yard</b> (gioco lungo) e <b>piedi</b> (putting); l'app converte dai metri che
+      inserisci tu. Fra un punto e l'altro della tabella interpola linearmente.<br><br>
+      <b>Limite dichiarato:</b> Broadie non pubblica valori sotto i 10 yard fuori dal green. I chip da meno
+      di 9 metri usano quindi un raccordo lineare fra 2,0 colpi a distanza zero e il valore pubblicato a
+      10 yard. È un'estrapolazione, non un dato.
+    </div></div>
+
+    <div class="card"><h2>Baseline scratch — ricostruzione</h2><div class="metodo">
+      <b>Non esiste una tabella scratch pubblicata liberamente.</b> Le tabelle per livello di handicap sono
+      nel libro <i>Every Shot Counts</i> di Broadie, protetto da copyright, e quello che circola online è
+      o una copia non citata del libro o materiale sbagliato (un repository open source molto diffuso
+      attribuisce allo scratch un putting <i>migliore</i> del PGA Tour a ogni distanza sopra i 5 piedi).<br><br>
+      Quella usata qui è quindi una <b>mia ricostruzione dichiarata</b>, costruita così:<br><br>
+      <b>Gioco lungo:</b> <code>scratch = 2 + K · (tour − 2)</code>. Il divario cresce dove la situazione è
+      più difficile, invece di essere una costante piatta. <code>K = 1,1478</code> è calibrato su un vincolo
+      verificabile e non su opinione: il giro atteso su un campo di Course Rating noto deve corrispondere
+      alla definizione di giocatore scratch. Su Colline del Gavi Champion dal tee Bianco (CR 74,2, par 73),
+      imponendo una media scratch di CR + 1,8 si ottiene un giro atteso di 76,0.<br><br>
+      <b>Controllo di coerenza superato:</b> il profilo che ne esce dà par 4 fra +0,23 e +0,52 sul par,
+      par 3 fra +0,15 e +0,26, par 5 fra −0,33 e +0,08 — cioè la firma tipica di uno scratch, sotto par
+      sui par 5 e sopra sui par 4.<br><br>
+      <b>Scarto noto:</b> sugli unici due ancoraggi scratch liberi (Broadie, <i>Assessing Golfer Performance
+      Using Golfmetrics</i>, 2008: tee da 140 yard = 3,2 colpi e da 200 yard = 3,5) il modello è ottimista
+      di 0,09 e 0,21 colpi. Calibrare su quegli ancoraggi darebbe K ≈ 1,28 e un giro atteso di 80,7, cioè
+      +7,7 sul par: incompatibile con un giocatore scratch. Per questo ho scelto il vincolo del Course Rating.<br><br>
+      <b>Putting scratch:</b> ricostruito da dati reali, non riscalato. <code>E[putt] = 2 − P(imbuca) + P(3 putt)</code>,
+      con le percentuali di imbucato per handicap 0 rilevate da Shot Scope, e la probabilità di tre putt
+      calibrata su due ancoraggi di Broadie (putt da 14 piedi = 1,8 colpi attesi; distanza media del
+      "due putt" attorno ai 25 piedi).<br><br>
+      Trattala come un ordine di grandezza, non come un dato ufficiale.
+    </div></div>
+
+    <div class="card"><h2>La tua media</h2><div class="metodo">
+      Terzo confronto, e l'unico che non dipende da nessuna fonte esterna: ogni giro viene misurato
+      rispetto alla <b>tua</b> prestazione media sui giri registrati. Serve a rispondere a "questo giro è
+      andato meglio o peggio del mio normale", che è la domanda più utile per capire se stai migliorando.
+      Diventa affidabile man mano che i giri si accumulano.
+    </div></div>
+
+    <div class="card"><h2>Dati dei campi</h2><div class="metodo">
+      <b>Colline del Gavi (Champion):</b> carta ufficiale del circolo sul sistema GES Golf, con il totale
+      confermato da FederGolf Piemonte (6380 m dal bianco, par 73).<br><br>
+      <b>Des Iles Borromées:</b> pagina "Misure del campo" del circolo, con la riga del tee giallo
+      confermata in modo indipendente da Hole19. Tutte le somme per nove e totali tornano.
+      CR e Slope non sono pubblicati dal circolo e restano non verificati.
+    </div></div>
+  </div>`);
+  return {header:'Metodo e fonti', body};
+};
+
+/* ---------------- BACKUP E RIPRISTINO ---------------- */
+function payloadBackup(){
+  return {app:'HCP+Stat Registra Giro', schema:SCHEMA_VERSION, esportato:new Date().toISOString(),
+          giri:LS.get('hcp_giri',[]), archivio:LS.get('hcp_archivio_v3'),
+          impostazioni:LS.get('hcp_impostazioni')};
+}
+async function eseguiBackup(){
+  const txt=JSON.stringify(payloadBackup());
+  const nome=`giri-golf-${new Date().toISOString().slice(0,10)}.json`;
+  try{
+    const file=new File([txt],nome,{type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:'Backup giri'});
+      metaSet({ultimoBackup:Date.now()}); return 'ok';
+    }
+  }catch(e){ if(e && e.name==='AbortError') return 'annullato'; }
+  try{
+    const b=new Blob([txt],{type:'application/json'}), u=URL.createObjectURL(b);
+    const a=document.createElement('a'); a.href=u; a.download=nome;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(u),4000);
+    metaSet({ultimoBackup:Date.now()}); return 'ok';
+  }catch(e){ return 'errore'; }
+}
+
+VIEWS.backup = function(){
+  const giri=LS.get('hcp_giri',[]);
+  const m=LS.get('hcp_meta',{})||{};
+  const daSalvare=giriDaBackup();
+  const quando = m.ultimoBackup ? new Date(m.ultimoBackup).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}) : null;
+  const body=el(`<div>
+    <div class="card"><h2>Stato del backup</h2>
+      <div class="hint">${quando ? `Ultimo backup: <b>${quando}</b>.` : 'Non hai mai fatto un backup.'}
+        ${daSalvare>0 ? ` Da allora ci sono <b>${daSalvare} giri</b> non ancora salvati fuori dal telefono.` : ' Tutti i giri sono al sicuro.'}</div>
+      <div class="hint">Il backup è un unico file che contiene tutti i giri, colpo per colpo. Salvalo su iCloud
+        Drive quando iOS te lo chiede: da lì lo ritrovi anche se cambi telefono.</div>
+      <button class="btn big" id="bk">💾 Salva backup su File / iCloud</button>
+    </div>
+    <div class="card"><h2>Ripristina</h2>
+      <div class="hint">Scegli un file di backup salvato in precedenza.</div>
+      <input type="file" accept=".json,application/json" id="imp">
+      <div id="impEsito"></div>
+    </div>
+    <div class="card"><h2>Copie automatiche nel telefono</h2>
+      <div class="hint">L'app conserva da sola le ultime 8 versioni complete dell'archivio. Servono a
+        recuperare da una cancellazione per sbaglio, non da un telefono perso.</div>
+      <div id="snapList"><div class="hint">Caricamento…</div></div>
+    </div>
+    <div class="card" id="cardArch" style="display:none"><h2>Giri messi da parte</h2>
+      <div class="hint" id="archTesto"></div>
+      <button class="btn secondary" id="archExp">Esporta questi giri (JSON)</button>
+    </div>
+    <div class="card"><h2>Esporta per analisi</h2>
+      <div class="hint">CSV da aprire in Excel o Numbers. Non sono backup: non si possono reimportare.</div>
+      <button class="btn secondary" id="e1">Riepilogo giri</button>
+      <button class="btn secondary" id="e2">Riepilogo buche</button>
+      <button class="btn secondary" id="e3">Dettaglio colpi + SG</button>
+    </div>
+  </div>`);
+
+  body.querySelector('#bk').onclick=async()=>{
+    const r=await eseguiBackup();
+    if(r==='ok') render();
+    else if(r==='errore') alert('Non è stato possibile creare il file di backup.');
+  };
+
+  body.querySelector('#imp').onchange=e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      let d;
+      try{ d=JSON.parse(rd.result); }catch(err){ alert('File non leggibile: non sembra un backup.'); return; }
+      if(!d || !Array.isArray(d.giri)){ alert('File non valido: non contiene giri.'); return; }
+      const attuali=LS.get('hcp_giri',[]);
+      const ids=new Set(attuali.map(g=>g.id));
+      const nuovi=d.giri.filter(g=>!ids.has(g.id));
+      const scelta=confirm(`Il file contiene ${d.giri.length} giri, di cui ${nuovi.length} non presenti nell'archivio.\n\nOK = aggiunge solo i ${nuovi.length} mancanti (consigliato)\nAnnulla = sostituisce tutto con i ${d.giri.length} del file`);
+      snapshotSalva();
+      if(scelta){ LS.set('hcp_giri', attuali.concat(nuovi)); }
+      else { if(!confirm(`Confermi la sostituzione? I ${attuali.length} giri attuali verranno rimpiazzati. Una copia resta nelle copie automatiche.`)) return;
+             LS.set('hcp_giri', d.giri); }
+      if(d.impostazioni) LS.set('hcp_impostazioni', d.impostazioni);
+      idbFlush(); render();
+    };
+    rd.readAsText(f);
+  };
+
+  snapshotElenco().then(sn=>{
+    const box=body.querySelector('#snapList');
+    if(!sn.length){ box.innerHTML='<div class="hint">Nessuna copia ancora: se ne crea una a ogni giro completato.</div>'; return; }
+    box.innerHTML='';
+    sn.slice().reverse().forEach(s=>{
+      const it=el(`<div class="listitem"><div>${new Date(s.ts).toLocaleString('it-IT')}
+        <div class="meta">${s.giri.length} giri${s.etichetta?' · '+esc(s.etichetta):''}</div></div>
+        <span class="badge">Ripristina</span></div>`);
+      it.onclick=()=>{ if(confirm(`Riportare l'archivio a questa copia (${s.giri.length} giri)? I giri attuali verranno sostituiti.`)){
+        snapshotSalva(); LS.set('hcp_giri', s.giri); idbFlush(); nav=[{view:'home'}]; render(); } };
+      box.appendChild(it);
+    });
+  });
+
+  const arch=LS.get('hcp_giri_archiviati',[]);
+  if(arch.length){
+    body.querySelector('#cardArch').style.display='block';
+    body.querySelector('#archTesto').innerHTML=`Ci sono <b>${arch.length} giri</b> registrati con una
+      versione precedente dell'app, messi da parte durante un aggiornamento. Non entrano nelle statistiche
+      perché il loro formato non permette di calcolare gli strokes gained, ma <b>non sono stati cancellati</b>
+      e puoi portarteli via quando vuoi.`;
+    body.querySelector('#archExp').onclick=()=>{
+      const txt=JSON.stringify({app:'HCP+Stat', tipo:'giri-archiviati', giri:arch}, null, 1);
+      const bl=new Blob([txt],{type:'application/json'}), u=URL.createObjectURL(bl);
+      const a=document.createElement('a'); a.href=u; a.download='giri-messi-da-parte.json';
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),4000);
+    };
+  }
+
+  const giriTutti=LS.get('hcp_giri',[]);
+  const bl = STAT_F.baseline==='scratch'?'scratch':'tour';
+  body.querySelector('#e1').onclick=()=>{
+    const r=[['giro_id','data','tipo','circolo','tee','buche','punteggio','par','sul_par','putt','gir','sg_tee','sg_approccio','sg_corto','sg_putting','sg_totale','baseline']];
+    giriTutti.forEach(g=>{const A=analizzaGiro(g,bl), c=A.calc;
+      r.push([g.id,g.data,g.tipo,g.circolo,g.tee,c.nBuche,c.score,c.par,c.score-c.par,c.putt,c.gir,
+        c.sgCat.tee.toFixed(2),c.sgCat.approccio.toFixed(2),c.sgCat.corto.toFixed(2),
+        c.sgCat.putting.toFixed(2),c.sgTot.toFixed(2),bl]);});
+    download('giri-riepilogo.csv', r.map(x=>x.map(escCsv).join(';')).join('\n'));
+  };
+  body.querySelector('#e2').onclick=()=>{
+    const r=[['giro_id','data','circolo','tee','buca','par','distanza_m','punteggio','sul_par','putt','gir','sg_buca']];
+    giriTutti.forEach(g=>{const A=analizzaGiro(g,bl);
+      A.bucheCalc.forEach(b=>r.push([g.id,g.data,g.circolo,g.tee,b.buca,b.par,b.distanza??'',b.score,b.diff,b.putt,b.girHit?'si':'no',b.sg!==null?b.sg.toFixed(2):'']));});
+    download('buche-riepilogo.csv', r.map(x=>x.map(escCsv).join(';')).join('\n'));
+  };
+  body.querySelector('#e3').onclick=()=>{
+    const r=[['giro_id','data','circolo','tee','buca','par','colpo','lie','distanza_m','bastone','penalita','categoria','attesi_partenza','attesi_arrivo','strokes_gained']];
+    giriTutti.forEach(g=>{const A=analizzaGiro(g,bl);
+      A.bucheCalc.forEach(b=>b.colpi.forEach((c,i)=>r.push([g.id,g.data,g.circolo,g.tee,b.buca,b.par,i+1,
+        LIE_NOME[c.lie],c.distM,c.bastone,c.penalita?'si':'no',CAT_NOME[c.cat],
+        c.e0.toFixed(3),c.e1.toFixed(3),c.sg.toFixed(3)])));});
+    download('colpi-dettaglio-sg.csv', r.map(x=>x.map(escCsv).join(';')).join('\n'));
+  };
+  return {header:'Backup e ripristino', body};
+};
+
+/* ---------------- IMPOSTAZIONI ---------------- */
+VIEWS.impostazioni = function(){
+  const imp=LS.get('hcp_impostazioni',{misura:'bandiera'});
+  const body=el(`<div><div class="card"><h2>Come misuri le distanze</h2>
+    <div class="hint">Impostato su <b>bandiera</b>: usi il telemetro, quindi tutte le distanze registrate
+      sono alla bandiera. Lascialo così. Cambialo solo se un giorno ti trovassi a registrare un giro col
+      GPS, che dà il centro del green: mescolare le due misure sposta di qualche metro, sempre nella
+      stessa direzione, le statistiche di prossimità e le distanze per bastone.</div>
+    <div class="grid3" id="mis">
+      <div class="chip${imp.misura==='bandiera'?' selected':''}" data-v="bandiera">Bandiera<br><span style="font-size:11px;opacity:.75">telemetro</span></div>
+      <div class="chip${imp.misura==='centro'?' selected':''}" data-v="centro">Centro green<br><span style="font-size:11px;opacity:.75">GPS</span></div>
+      <div class="chip${imp.misura==='misto'?' selected':''}" data-v="misto">Misto<br><span style="font-size:11px;opacity:.75">entrambi</span></div>
+    </div></div></div>`);
+  body.querySelector('#mis').onclick=e=>{
+    const c=e.target.closest('.chip'); if(!c) return;
+    body.querySelectorAll('#mis .chip').forEach(x=>x.classList.remove('selected'));
+    c.classList.add('selected'); LS.set('hcp_impostazioni',{...imp, misura:c.dataset.v});
+  };
+  return {header:'Impostazioni', body};
+};
+
+
+/* ---------------- SINCRONIZZAZIONE (schermata) ---------------- */
+VIEWS.sincronizza = function(){
+  const s=S();
+  const sosp=syncInSospeso();
+  const body=el('<div></div>');
+
+  /* --- stato, sempre in cima e sempre esplicito --- */
+  let statoTesto, statoCol;
+  if(!s.attiva){ statoTesto='Spenta. I giri restano solo dentro questo telefono.'; statoCol='var(--grigio)'; }
+  else if(s.ultimoErrore){ statoTesto='Ultimo tentativo non riuscito.'; statoCol='var(--rosso)'; }
+  else if(sosp>0){ statoTesto=sosp+(sosp===1?' giro non ancora':' giri non ancora')+' al sicuro.'; statoCol='var(--ambra)'; }
+  else { statoTesto='Tutto al sicuro.'; statoCol='var(--dv-good)'; }
+
+  const cStato=el(`<div class="card"><h2>Stato</h2>
+    <div style="font-size:16px;font-weight:700;color:${statoCol};margin-bottom:6px;">${esc(statoTesto)}</div>
+    <div class="hint">Ultima sincronizzazione riuscita: <b>${esc(quandoTesto(s.ultimoOk))}</b>.
+      ${s.privato===false?'<br><b style="color:var(--rosso)">Attenzione: il repository risulta pubblico.</b> I tuoi punteggi sarebbero visibili a chiunque: rendilo privato dalle impostazioni del repository su GitHub.':''}
+      ${s.privato===true?'<br>Repository verificato <b>privato</b>.':''}</div>
+    ${s.ultimoErrore?`<div class="installtip" style="color:var(--rosso)">${esc(s.ultimoErrore)}</div>`:''}
+  </div>`);
+  body.appendChild(cStato);
+
+  if(s.attiva){
+    const bSync=el(`<button class="btn big" id="sy">${_sy.inCorso?'Sincronizzazione in corso…':'☁︎ Sincronizza adesso'}</button>`);
+    bSync.disabled=_sy.inCorso;
+    bSync.onclick=async()=>{
+      bSync.disabled=true; bSync.textContent='Sincronizzazione in corso…';
+      const r=await syncEsegui();
+      render();
+      if(r.esito==='ok'){
+        const p=[];
+        if(r.caricati) p.push(r.caricati+' messi al sicuro');
+        if(r.nuovi) p.push(r.nuovi+' arrivati da un altro dispositivo');
+        if(r.aggiornati) p.push(r.aggiornati+' aggiornati');
+        if(r.rimossi) p.push(r.rimossi+' spostati fra i cancellati');
+        if(r.conflitti) p.push(r.conflitti+' da decidere');
+        alert(p.length?('Fatto: '+p.join(', ')+'.'):'Fatto. Era già tutto allineato.');
+      } else if(r.esito==='errore'){ alert('Non è andata a buon fine.\n\n'+r.messaggio+'\n\nNessun dato è andato perso: i giri sono nel telefono e il prossimo tentativo riparte da qui.'); }
+      else if(r.esito==='offline'){ alert('Nessuna connessione. Riprovo da solo appena torna la rete.'); }
+    };
+    body.appendChild(bSync);
+  }
+
+  /* --- conflitti: la sola cosa che l'app non decide da sola --- */
+  if(_sy.conflitti.length){
+    const cc=el(`<div class="card" style="border-color:var(--ambra)">
+      <h2 style="color:var(--ambra)">Da decidere tu</h2>
+      <div class="hint">Questi giri risultano modificati in due posti diversi. L'app non sceglie al posto
+        tuo e non ha sovrascritto niente: dimmi quale versione tenere.</div></div>`);
+    _sy.conflitti.forEach(c=>{
+      const L=c.locale, R=c.remoto;
+      const descr=g=>{
+        if(!g) return 'versione non leggibile';
+        const nb=(g.buche||[]).length;
+        const q=g.modificatoIl?new Date(g.modificatoIl).toLocaleString('it-IT'):'data sconosciuta';
+        return `${nb} buche · modificata il ${q}${g.modificatoDa?' da '+esc(g.modificatoDa):''}`;
+      };
+      const box=el(`<div style="border-top:1px solid var(--bordo);padding-top:12px;margin-top:12px;">
+        <b>${esc((L&&L.circolo)||(R&&R.circolo)||'Giro')}</b>
+        <div class="meta" style="margin-bottom:8px;">${fmtData((L&&L.data)||(R&&R.data))}</div>
+        <div class="hint"><b>Su questo telefono:</b> ${descr(L)}</div>
+        <div class="hint"><b>Sul repository:</b> ${descr(R)}</div>
+        <div class="grid2">
+          <button class="btn secondary" style="margin:0">Tieni quella del telefono</button>
+          <button class="btn secondary" style="margin:0">Tieni quella del repository</button>
+        </div></div>`);
+      box.querySelectorAll('button')[0].onclick=()=>{ if(confirm('Tenere la versione di questo telefono? Quella sul repository verrà sostituita, ma resta nella cronologia di GitHub.')) risolviConflitto(c.id,'locale'); };
+      box.querySelectorAll('button')[1].onclick=()=>{ if(confirm('Tenere la versione del repository? Quella di questo telefono verrà sostituita. Una copia resta nelle copie automatiche.')) risolviConflitto(c.id,'remoto'); };
+      cc.appendChild(box);
+    });
+    body.appendChild(cc);
+  }
+
+  /* --- impostazioni --- */
+  const cImp=el(`<div class="card"><h2>Collegamento a GitHub</h2>
+    <div class="hint">Serve una volta per dispositivo. Il token si genera su GitHub e vale solo per il
+      repository dei dati: non dà accesso a nient'altro.</div>
+    <label>Nome utente GitHub</label>
+    <input type="text" id="sy_u" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(s.utente)}" placeholder="il tuo nome utente">
+    <label style="margin-top:10px;">Repository dei dati</label>
+    <input type="text" id="sy_r" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(s.repo)}" placeholder="golf-dati">
+    <label style="margin-top:10px;">Token</label>
+    <input type="password" id="sy_t" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(s.token)}" placeholder="github_pat_…">
+    <div class="hint" style="margin-top:6px;">Il token resta dentro questo telefono. Non finisce nei backup,
+      non viene mai mostrato per intero e non esce di qui.</div>
+    <label style="margin-top:10px;">Nome di questo dispositivo</label>
+    <input type="text" id="sy_d" value="${esc(s.dispositivo)}" placeholder="iPhone">
+    <div class="hint">Compare accanto a ogni giro caricato: serve a capire, in caso di conflitto, quale
+      dispositivo ha fatto cosa.</div>
+    <button class="btn secondary" id="sy_v">Verifica il collegamento</button>
+    <div id="sy_esito"></div>
+  </div>`);
+
+  const leggi=()=>({
+    utente:cImp.querySelector('#sy_u').value.trim(),
+    repo:cImp.querySelector('#sy_r').value.trim(),
+    token:cImp.querySelector('#sy_t').value.trim(),
+    dispositivo:cImp.querySelector('#sy_d').value.trim()||nomeDispositivoIniziale()
+  });
+  cImp.querySelector('#sy_v').onclick=async()=>{
+    Sset(leggi());
+    const box=cImp.querySelector('#sy_esito');
+    box.innerHTML='<div class="hint">Verifico…</div>';
+    try{
+      const r=await syncVerifica();
+      box.innerHTML=`<div class="installtip">Collegamento riuscito con <b>${esc(r.nome)}</b>.<br>
+        ${r.privato?'Il repository è <b>privato</b>, come deve essere.'
+                   :'<b style="color:var(--rosso)">Il repository è PUBBLICO.</b> Rendilo privato su GitHub prima di attivare: i tuoi punteggi sarebbero visibili a chiunque.'}</div>`;
+      render_stato_bottone();
+    }catch(e){
+      box.innerHTML=`<div class="installtip" style="color:var(--rosso)">${esc(e.message||String(e))}</div>`;
+    }
+  };
+  body.appendChild(cImp);
+
+  /* --- interruttore --- */
+  const cSw=el(`<div class="card"><h2>Interruttore</h2>
+    <div class="hint">Finché è spenta, l'app si comporta esattamente come prima: i dati restano nel
+      telefono e non esce niente. Accendila solo dopo che la verifica qui sopra è riuscita.</div></div>`);
+  const bSw=el(`<button class="btn ${s.attiva?'danger':''}" style="margin:0">${s.attiva?'Spegni la sincronizzazione':'Accendi la sincronizzazione'}</button>`);
+  bSw.onclick=async()=>{
+    if(s.attiva){ Sset({attiva:false}); render(); return; }
+    Sset(leggi());
+    try{
+      const r=await syncVerifica();
+      if(!r.privato && !confirm('Il repository risulta PUBBLICO: i tuoi giri sarebbero visibili a chiunque.\n\nAccendere lo stesso? (sconsigliato)')) return;
+      Sset({attiva:true});
+      render();
+      syncAuto();
+    }catch(e){ alert('Non posso accendere la sincronizzazione:\n\n'+(e.message||String(e))); }
+  };
+  cSw.appendChild(bSw);
+  body.appendChild(cSw);
+  function render_stato_bottone(){}
+
+  /* --- giri nascosti --- */
+  const canc=LS.get('hcp_giri_cancellati',[]);
+  if(canc.length){
+    const cN=el(`<div class="card"><h2>Giri eliminati</h2>
+      <div class="hint">Eliminare un giro dal telefono non lo distrugge: la copia resta qui e, sul
+        repository, il file viene spostato in <code>cancellati/</code> invece che rimosso.
+        ${canc.filter(c=>!c.spostato).length?'<br><b>'+canc.filter(c=>!c.spostato).length+'</b> in attesa di essere spostati sul repository.':''}</div></div>`);
+    canc.slice().reverse().forEach(c=>{
+      const g=c.giro||{};
+      const it=el(`<div class="listitem"><div><b>${esc(g.circolo||'giro')}</b>
+        <div class="meta">${fmtData(g.data)}${c.spostato?'':' · da spostare'}</div></div>
+        <span class="badge">Ripristina</span></div>`);
+      it.onclick=()=>{
+        if(!confirm('Rimettere questo giro fra i giri salvati?')) return;
+        const giri=LS.get('hcp_giri',[]);
+        if(!giri.some(x=>x.id===c.id)){ marcaModifica(c.giro); giri.push(c.giro); LS.set('hcp_giri',giri); }
+        LS.set('hcp_giri_cancellati', LS.get('hcp_giri_cancellati',[]).filter(x=>x.id!==c.id));
+        idbFlush(); render(); syncAuto();
+      };
+      cN.appendChild(it);
+    });
+    body.appendChild(cN);
+  }
+
+  body.appendChild(el(`<div class="card"><h2>Come funziona</h2><div class="metodo">
+    <b>Cosa sale.</b> Un file per ogni giro, dentro la cartella <code>giri/</code> del repository privato.
+    Non c'è un archivio unico: due telefoni che registrano giri diversi non si pestano i piedi.<br><br>
+    <b>Cosa scende.</b> All'apertura dell'app, i giri presenti sul repository e assenti qui vengono
+    aggiunti. La sincronizzazione aggiunge: non cancella mai un giro da sola.<br><br>
+    <b>Se due dispositivi correggono lo stesso giro.</b> L'app se ne accorge, non sovrascrive niente e
+    ti mostra le due versioni chiedendo quale tenere.<br><br>
+    <b>Il backup su file resta.</b> È la via di scorta per il caso in cui GitHub non sia raggiungibile
+    o l'account non sia disponibile. Continua a usarlo quando l'app te lo consiglia.<br><br>
+    <b>Se perdi il telefono.</b> Su GitHub, Settings → Developer settings → Fine-grained tokens →
+    Revoke accanto al token. Dieci secondi e quel telefono non tocca più l'archivio.
+  </div></div>`));
+
+  return {header:'Sincronizzazione', body};
+};
+
+initStore().then(()=>{
+  bozza = LS.get('hcp_bozza_v3', null);
+  render();
+  const m=LS.get('hcp_meta',{})||{};
+  if(m.rimossiLegacy && !m.avvisoLegacy){
+    metaSet({avvisoLegacy:1});
+    setTimeout(()=>alert(`Aggiornamento archivio: ${m.rimossiLegacy} giri registrati con una versione precedente sono stati messi da parte, non cancellati.\n\nAvevano punteggi non affidabili e non producevano strokes gained, quindi sono esclusi dalle statistiche. Li trovi in Backup, sezione "Giri messi da parte", e da lì puoi esportarli.`), 400);
+  }
+  if(!S().dispositivo) Sset({dispositivo:nomeDispositivoIniziale()});
+  syncAuto();                                  // all'apertura, se e' accesa e c'e' rete
+  window.addEventListener('online', syncAuto); // e appena la rete torna
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncAuto(); });
+}).catch(e=>{
+  document.getElementById('app').innerHTML =
+    '<main><div class="card"><h2>Errore di avvio</h2><div class="hint">'+String(e && e.message || e)+'</div></div></main>';
+});
+</script>
+</body>
+</html>

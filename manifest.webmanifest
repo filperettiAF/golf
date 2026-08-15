@@ -1,0 +1,17 @@
+{
+  "name": "Registra Giro — HCP+Stat",
+  "short_name": "Registra Giro",
+  "description": "Registrazione dei giri di golf colpo per colpo con analisi strokes gained.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f5132",
+  "theme_color": "#0f5132",
+  "lang": "it",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
