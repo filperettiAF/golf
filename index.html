@@ -1540,7 +1540,11 @@ function giriDaBackup(){
 
 let nav = [{view:'home'}];
 let bozza = null;
-let STAT_F = {circolo:'__tutti__', tee:'__tutti__', periodo:'tutti', baseline:'tour'};
+/* v10: il periodo predefinito era "tutti i giri", e i delta della striscia KPI si
+   calcolano solo quando un periodo e' impostato — quindi con l'impostazione di
+   fabbrica non comparivano mai. Arccos apre sul trend a 5 giri, Shot Scope sugli
+   ultimi: con cento giri l'anno la domanda vera e' "come sto adesso". */
+let STAT_F = {circolo:'__tutti__', tee:'__tutti__', periodo:'10', baseline:'tour'};
 
 function push(v,p){ nav.push({view:v,params:p}); render(); }
 function back(){ if(nav.length>1){ nav.pop(); render(); } }
@@ -1561,6 +1565,9 @@ const _A = String.fromCharCode(38), _P = String.fromCharCode(59);
 const ENT = { '&':_A+'amp'+_P, '<':_A+'lt'+_P, '>':_A+'gt'+_P, '"':_A+'quot'+_P, "'":_A+'#39'+_P };
 function esc(s){ return String(s===null||s===undefined?'':s).replace(/[&<>"']/g, c=>ENT[c]); }
 function sgn(v,dec){ dec=dec===undefined?2:dec; return (v>=0?'+':'') + v.toFixed(dec); }
+/* Come sgn, ma con la virgola: si usa dove il numero sta dentro una frase e non
+   in una colonna, perche' in italiano "+6.2 sul par" accanto a "79,2" stona. */
+function sgnIt(v,dec){ return sgn(v,dec).replace('.',','); }
 function el(h){ const t=document.createElement('template'); t.innerHTML=String(h).trim(); return t.content.firstChild; }
 function escCsv(v){ if(v===null||v===undefined) return ''; const s=String(v); return /[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
 function download(fn,txt){
@@ -1970,6 +1977,10 @@ function statBastoni(giri){
       distMedia: d.length?Math.round(mu):null,
       disp: sd!==null?Math.round(sd):null,
       p10: d.length>=5?Math.round(q(0.10)):null, p90: d.length>=5?Math.round(q(0.90)):null,
+      /* v10: la distanza DI LAVORO, non la media. Arccos usa il 70esimo percentile
+         e lo chiama "Smart Distance": per SCEGLIERE il bastone la media e' il numero
+         sbagliato, perche' la tirano giu' i colpi mal colpiti. */
+      p70: d.length>=5?Math.round(q(0.70)):null,
       dMin: d.length?Math.round(d[0]):null, dMax: d.length?Math.round(d[d.length-1]):null,
       latMedia: latMed!==null?Math.round(latMed):null, latDisp: latSd!==null?Math.round(latSd):null,
       nLat: x.lat.length,
@@ -2287,11 +2298,19 @@ function statPuttDerivato(A){
 /* conversioni di punteggio: metriche ShotLink a conteggio semplice */
 function statConversioni(A){
   let buche=0, gir=0, girBirdie=0, bogeyPeggio=0, doppioPeggio=0, bounceOpp=0, bounceOk=0;
+  /* v10: tre letture standard del Tour che mancavano.
+     Reverse bounce back = bogey o peggio subito DOPO un birdie o meglio: il Tour la
+     pubblica accanto al bounce back, ed e' la stessa domanda girata.
+     Par breakers = quota di buche sotto il par.
+     Rapporto birdie/bogey = quanti birdie per ogni bogey o peggio. */
+  let revOpp=0, revKo=0, birdiePiu=0;
   const doppiPen={};
   A.forEach(g=>{
-    let prevOver=false;
+    let prevOver=false, prevUnder=false;
     g.bucheCalc.forEach(b=>{
       buche++;
+      if(b.diff<=-1) birdiePiu++;
+      if(prevUnder){ revOpp++; if(b.diff>=1) revKo++; }
       if(b.girHit){ gir++; if(b.diff<=-1) girBirdie++; }
       if(b.diff>=1) bogeyPeggio++;
       if(b.diff>=2){
@@ -2302,10 +2321,14 @@ function statConversioni(A){
       }
       if(prevOver){ bounceOpp++; if(b.diff<=-1) bounceOk++; }
       prevOver = b.diff>=1;
+      prevUnder = b.diff<=-1;
     });
   });
   return {buche:buche, gir:gir, girBirdie:girBirdie, bogeyPeggio:bogeyPeggio,
-          doppioPeggio:doppioPeggio, doppiPen:doppiPen, bounceOpp:bounceOpp, bounceOk:bounceOk};
+          doppioPeggio:doppioPeggio, doppiPen:doppiPen, bounceOpp:bounceOpp, bounceOk:bounceOk,
+          revOpp:revOpp, revKo:revKo, birdiePiu:birdiePiu,
+          parBreakers: buche?100*birdiePiu/buche:null,
+          rapporto: bogeyPeggio? birdiePiu/bogeyPeggio : null};
 }
 
 /* par 5: andare o non andare. Regola euristica DICHIARATA: secondo colpo
@@ -2667,6 +2690,306 @@ function validaBaseCorto(){
   return {righe:righe, fuori:fuori, k:CORTO_K, delta:delta, dCat:dCat, dTot:dTot, nGiri:nG};
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   v10 — LE METRICHE CHE LE ALTRE APP HANNO E NOI NO
+   ══════════════════════════════════════════════════════════════════════════
+   Tutte derivate dallo schema v9, nessun campo nuovo, nessun tocco in campo.
+   Fonti e classe di ogni riferimento nel documento
+   03-Metodo-e-riferimenti/19-08-2026-confronto-metriche-app-e-lacune.md      */
+
+/* ── GIOCO LUNGO DAL TEE ───────────────────────────────────────────────────
+   GOOD DRIVE: su par 4 e 5, fairway centrati PIU' i casi in cui il drive ha
+   mancato il fairway ma la buca e' arrivata in green in regulation. Il FIR
+   punisce allo stesso modo il rough a due metri e la palla ingiocabile; questo
+   misura cio' che al drive si chiede davvero, cioe' non compromettere la buca.
+   Riferimenti Anova Golf: PGA Tour 82,5% · college maschile 83% · Pac-12 84,5%.
+   Regola dichiarata: un drive con penalita' non e' mai "buono", qualunque sia il
+   lie di arrivo dopo il drop.
+   DISTANZA RESIDUA: quanto resta al buco dopo il drive, par 4 e par 5 separati.
+   E' l'unico numero che fonde distanza e precisione in una cosa sola. I drive con
+   penalita' sono esclusi: dopo un OB la residua e' quella del tee e falserebbe la
+   media. Riferimento studio ShotLink R09: Tour par 4 146,5-151,7 yd (134-139 m),
+   par 5 262,9-270,7 yd (240-248 m).
+   RECUPERO: i colpi senza linea diretta verso il green, per giro. Il campo lo
+   avevamo, ma solo nel pannello di qualita' del dato come audit della deriva di
+   classificazione: la' controlla il giudice, qui misura il gioco.
+   Riferimento Arccos, fra il giro migliore e il peggiore dello stesso giocatore:
+   scratch 0,39 -> 1,19 · handicap 5 0,71 -> 1,75 · handicap 10 1,18 -> 2,38.   */
+function statDriving(A){
+  const nGiri=A.length;
+  let opp=0, good=0, trouble=0, rec=0;
+  const res4=[], res5=[];
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    b.colpi.forEach(c=>{ if(c.lie==='recupero') rec++; });
+    const c0=b.colpi[0];
+    if(!c0 || c0.lie!=='tee' || b.par<4) return;
+    opp++;
+    const c1=b.colpi[1] || null;
+    const pen=!!c0.penalita;
+    const arrivo=c1?c1.lie:null;
+    if(!pen && (arrivo==='fairway' || arrivo==='green' || b.girHit)) good++;
+    if(pen || arrivo==='recupero') trouble++;
+    if(!pen && c1 && c1.distM>0) (b.par>=5?res5:res4).push(c1.distM);
+  }));
+  return {nGiri:nGiri, opp:opp, good:good, pct: opp?100*good/opp:null,
+    trouble:trouble, troubleGiro: nGiri?trouble/nGiri:null,
+    rec:rec, recGiro: nGiri?rec/nGiri:null,
+    res4:{n:res4.length, m:res4.length?media(res4):null},
+    res5:{n:res5.length, m:res5.length?media(res5):null}};
+}
+
+/* ── PUTTING: le due letture che SEPARANO ──────────────────────────────────
+   PUTT PER GIR: i putt sulle sole buche prese in regulation, cioe' il putting al
+   netto della qualita' dell'approccio. Il Tour la chiama GIR Putting Average;
+   la mostrano anche TheGrint e Hole19. Nessun riferimento numerico pubblicato
+   che abbia superato la verifica: il confronto e' con la propria finestra stabile.
+   DISTANZA DEL PRIMO PUTT: e' l'approccio misurato dal punto di vista del putt.
+   Data due volte: su tutte le buche e sulle sole buche in GIR, che e' la versione
+   pulita (senza i chip finiti vicini). Riferimento amatoriale ~15 ft (4,6 m,
+   GolfWRX); prossimita' media d'approccio scratch 41,7 ft (12,7 m) contro 68 ft
+   dell'handicap 15 (Arccos) — grandezza affine, non la stessa cosa.
+   PUTT CORTI MANCATI entro 5 ft, per giro. Riferimento Shot Scope per fascia di
+   punteggio: 4,6 (giri in 100) · 3,6 (90) · 2,7 (80) · 1,9 (70) · 1,6 (60).
+   FOOTAGE: metri totali di putt imbucati per giro (Shot Scope).               */
+const PUTT_CORTO_M = 5/M_TO_FT;      // cinque piedi
+function statPuttAvanzato(A){
+  const nGiri=A.length;
+  let girN=0, girPutt=0, corti=0, cortiMancati=0, footage=0;
+  const primo=[], primoGir=[];
+  A.forEach(g=>g.bucheCalc.forEach((b,bi)=>{
+    const compl = ((g.buche||[])[bi]||{}).completata!==false;
+    const pt=b.colpi.filter(c=>c.lie==='green');
+    if(b.girHit){ girN++; girPutt+=b.putt; }
+    if(pt.length && pt[0].distM>0){ primo.push(pt[0].distM); if(b.girHit) primoGir.push(pt[0].distM); }
+    pt.forEach((x,i)=>{
+      const ultimo = i===pt.length-1;
+      const imbucato = ultimo && compl && b.colpi[b.colpi.length-1]===x;
+      if(imbucato) footage += (x.distM||0);
+      if(x.distM>0 && x.distM<=PUTT_CORTO_M){ corti++; if(!imbucato) cortiMancati++; }
+    });
+  }));
+  return {nGiri:nGiri, girN:girN, puttGir: girN? girPutt/girN : null,
+    primo: primo.length?media(primo):null, nPrimo:primo.length,
+    primoGir: primoGir.length?media(primoGir):null, nPrimoGir:primoGir.length,
+    corti:corti, cortiMancati:cortiMancati,
+    cortiMancatiGiro: nGiri? cortiMancati/nGiri : null,
+    cortiPct: corti? 100*(corti-cortiMancati)/corti : null,
+    footageGiro: nGiri? footage/nGiri : null};
+}
+
+/* ── RENDIMENTO PER FASCIA DI STROKE INDEX ─────────────────────────────────
+   Lo stroke index sta in ogni buca da sempre, copiato dall'archivio campi alla
+   creazione del giro, e non era mai entrato in nessuna analisi.
+   NESSUNA piattaforma di gioco lo espone (esiste solo lato handicapping): questa
+   e' una lettura originale, non una copia — e per il ponte verso lo storico
+   federale e' la piu' promettente che abbiamo.                                */
+const SI_FASCE=[{k:'1-6',  lo:1,  hi:6,  nome:'SI 1\u20136, le sei difficili'},
+                {k:'7-12', lo:7,  hi:12, nome:'SI 7\u201312, le sei centrali'},
+                {k:'13-18',lo:13, hi:18, nome:'SI 13\u201318, le sei facili'}];
+function statPerSI(A){
+  const out=SI_FASCE.map(f=>({k:f.k, nome:f.nome, lo:f.lo, hi:f.hi,
+    nb:0, diff:0, gir:0, putt:0, sg:0, nSg:0, bogeyPiu:0, birdie:0}));
+  let senzaSI=0;
+  A.forEach(g=>g.bucheCalc.forEach((b,bi)=>{
+    const si=((g.buche||[])[bi]||{}).si;
+    if(!(si>=1 && si<=18)){ senzaSI++; return; }
+    const f=out.find(x=>si>=x.lo && si<=x.hi); if(!f) return;
+    f.nb++; f.diff+=b.diff; f.putt+=b.putt;
+    if(b.girHit) f.gir++;
+    if(b.diff>=1) f.bogeyPiu++;
+    if(b.diff<=-1) f.birdie++;
+    if(b.sg!==null && b.sg!==undefined){ f.sg+=b.sg; f.nSg++; }
+  }));
+  return {fasce: out.filter(x=>x.nb>0).map(x=>({k:x.k, nome:x.nome, n:x.nb,
+      media:x.diff/x.nb, girPct:100*x.gir/x.nb, puttB:x.putt/x.nb,
+      bogeyPct:100*x.bogeyPiu/x.nb, birdiePct:100*x.birdie/x.nb,
+      sgB: x.nSg? x.sg/x.nSg : null, solido:x.nb>=N_MIN_FASCIA})),
+    senzaSI:senzaSI};
+}
+
+/* ── CHIP MULTIPLI entro le 50 yard ───────────────────────────────────────
+   Quante volte a giro serve PIU' DI UN colpo di gioco corto per arrivare in green.
+   E' il complemento esatto dell'up and down: la nostra regola "un tentativo per
+   buca" esclude per costruzione il secondo chip, cioe' il caso peggiore.
+   Riferimento Shot Scope per fascia di punteggio: 4,1 (giri in 100) · 3,2 (90) ·
+   2,1 (80) · 1,2 (70) · 0,9 (60).                                            */
+function statChipMultipli(A){
+  const nGiri=A.length;
+  let buche=0, multi=0, colpi=0;
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    buche++;
+    let k=0;
+    b.colpi.forEach((c,i)=>{
+      if(i>0 && c.lie!=='green' && c.distM>0 && c.distM*M_TO_YD<=50) k++;
+    });
+    colpi+=k;
+    if(k>=2) multi++;
+  }));
+  return {nGiri:nGiri, buche:buche, multi:multi,
+    perGiro: nGiri? multi/nGiri : null, pct: buche? 100*multi/buche : null,
+    colpiGiro: nGiri? colpi/nGiri : null};
+}
+
+/* ── BUNKER: greenside contro fairway ─────────────────────────────────────
+   Il sand save conta solo entro le 30 yard, quindi il bunker di fairway non era
+   misurato da nessuna parte. Il Tour li separa (Fairway Bunker Tendency,
+   GIR Pct. Fairway Bunker).
+   Riferimento Shot Scope sul costo a punteggio, con un esito controintuitivo:
+   per lo SCRATCH il greenside costa +0,43 e il fairway +0,19; all'handicap 20 si
+   inverte (+0,42 contro +0,55). Classe: dato divulgato senza numerosita'.     */
+function statBunker(A){
+  const nGiri=A.length;
+  const mk=()=>({n:0, sg:0, buche:0, diff:0, gir:0});
+  const gs=mk(), fw=mk();
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    let hasG=false, hasF=false;
+    b.colpi.forEach(c=>{
+      if(c.lie!=='sabbia' || !(c.distM>0)) return;
+      const greenside = c.distM*M_TO_YD<=30;
+      const box = greenside? gs : fw;
+      box.n++; box.sg += (c.sg||0);
+      if(greenside) hasG=true; else hasF=true;
+    });
+    if(hasG){ gs.buche++; gs.diff+=b.diff; if(b.girHit) gs.gir++; }
+    if(hasF){ fw.buche++; fw.diff+=b.diff; if(b.girHit) fw.gir++; }
+  }));
+  const fin=o=>({n:o.n, perGiro: nGiri? o.n/nGiri : null, sg: o.n? o.sg/o.n : null,
+    buche:o.buche, costo: o.buche? o.diff/o.buche : null,
+    girPct: o.buche? 100*o.gir/o.buche : null, solido:o.n>=N_MIN_FASCIA});
+  return {greenside:fin(gs), fairway:fin(fw), nGiri:nGiri};
+}
+
+/* ── QUANTO RENDE OGNI BASTONE VERSO IL GREEN ─────────────────────────────
+   Shot Scope mostra green success by club e average proximity by club, Arccos il
+   GIR per bastone. Noi avevamo distanza e dispersione per bastone, ma non quanto
+   RENDE ciascuno verso il green: e' l'informazione che serve alla scelta.      */
+function statBastoneVerde(A){
+  const m={};
+  A.forEach(g=>g.bucheCalc.forEach(b=>b.colpi.forEach((c,i)=>{
+    if(c.lie==='green' || c.penalita) return;
+    if(c.cat!=='approccio' && c.cat!=='corto') return;
+    const k=c.bastone; if(!k) return;
+    if(!m[k]) m[k]={bastone:k, n:0, green:0, prox:[], da:[], sg:0};
+    const x=m[k];
+    x.n++; x.da.push(c.distM); x.sg+=(c.sg||0);
+    const nx=b.colpi[i+1];
+    if(!nx){ x.green++; x.prox.push(0); }
+    else if(nx.lie==='green'){ x.green++; x.prox.push(nx.distM); }
+  })));
+  return Object.values(m).map(x=>({bastone:x.bastone, n:x.n,
+    greenPct: 100*x.green/x.n,
+    prox: x.prox.length? media(x.prox) : null,
+    da: x.da.length? media(x.da) : null,
+    sgColpo: x.sg/x.n, solido: x.n>=N_MIN_FASCIA}))
+    .sort((a,b)=>(b.da||0)-(a.da||0));
+}
+
+/* ── GAPPING DEI BASTONI ──────────────────────────────────────────────────
+   Shot Scope e Arccos lo fanno; FlightScope consiglia 10-15 yard di carry fra
+   bastoni adiacenti. Qui il salto e' fra i 70esimi percentili.
+   ⚠️ APPROSSIMATO, e va dichiarato: noi misuriamo la distanza PERCORSA
+   (corretta col settore), non il carry. Un bastone che rotola molto sembra piu'
+   lungo di quanto porta in aria, quindi i salti sono indicativi.              */
+const GAP_MIN_M = 6, GAP_MAX_M = 14;
+function statGapping(bast){
+  const c=(bast||[]).filter(b=>b.bastone!=='Putter' && b.p70!==null && b.p70!==undefined && b.nMis>=5)
+    .slice().sort((a,b)=>b.p70-a.p70);
+  const righe=[];
+  for(let i=0;i<c.length-1;i++){
+    const gap=c[i].p70-c[i+1].p70;
+    righe.push({a:c[i].bastone, b:c[i+1].bastone, p70a:c[i].p70, p70b:c[i+1].p70, gap:gap,
+      stato: gap>GAP_MAX_M? 'buco' : (gap<GAP_MIN_M? 'sovrapposti' : 'ok')});
+  }
+  return {righe:righe, n:c.length,
+    buchi:righe.filter(x=>x.stato==='buco').length,
+    sovrapposti:righe.filter(x=>x.stato==='sovrapposti').length};
+}
+
+/* ── IL LIVELLO, REPARTO PER REPARTO ─────────────────────────────────────
+   Broadie in Golfmetrics esprime ogni reparto come un HANDICAP, e Clippd fa la
+   stessa mossa con una scala 0-200 di cui non pubblica la formula. E' una
+   traduzione che mancava: "putting -0,8 colpi/giro" e' corretto e astratto.
+   Costruzione dichiarata, in due passi verificabili:
+   1. la scala colpi-sul-par -> handicap e' quella pubblicata da Shot Scope
+      (hcp 0 +0,83 · 5 +6,33 · 10 +10,88 · 15 +17,38 · 20 +21,69 · 25 +28,97),
+      interpolata linearmente. Classe: dato divulgato senza numerosita';
+   2. per ogni reparto si calcola il CONTROFATTUALE: che punteggio faresti se quel
+      reparto fosse al livello della baseline, lasciando gli altri come sono. Il
+      livello equivalente di quel punteggio e' il numero mostrato.
+   LIMITE DICHIARATO: la scala e' sul punteggio rispetto al PAR, non al CR. Su un
+   campo dove il CR supera il par (Colline del Gavi: CR 74,2, par 73) il livello
+   esce pessimistico di circa un colpo. Non e' un indice WHS e non lo sostituisce:
+   quello vero sta nella Dashboard, sulle 386 gare.                            */
+const LADDER_HCP=[[0,0.83],[5,6.33],[10,10.88],[15,17.38],[20,21.69],[25,28.97]];
+function livelloDaVsPar(v){
+  if(v===null||v===undefined||isNaN(v)) return null;
+  if(v<=LADDER_HCP[0][1]) return 0;
+  const u=LADDER_HCP[LADDER_HCP.length-1];
+  if(v>=u[1]) return u[0];
+  for(let i=1;i<LADDER_HCP.length;i++){
+    const a=LADDER_HCP[i-1], b=LADDER_HCP[i];
+    if(v<=b[1]) return a[0]+(b[0]-a[0])*(v-a[1])/(b[1]-a[1]);
+  }
+  return u[0];
+}
+function statLivelli(A){
+  const C=A.filter(g=>g.completo);
+  if(C.length<3) return null;
+  const bMedie=media(C.map(g=>g.calc.nBuche));
+  const per18 = bMedie>0 ? 18/bMedie : 1;
+  const vsPar=media(C.map(g=>g.calc.score-g.calc.par))*per18;
+  const cats=['tee','approccio','corto','putting'];
+  const out={n:C.length, vsPar:vsPar, livello:livelloDaVsPar(vsPar), per18:per18, cat:{}};
+  cats.forEach(k=>{
+    const sg=media(C.map(g=>g.calc.sgCat[k]))*per18;
+    const v2=vsPar+sg;                      // sg negativo => il punteggio migliora
+    const l2=livelloDaVsPar(v2);
+    out.cat[k]={sg:sg, vsPar:v2, livello:l2, guadagno: out.livello!==null&&l2!==null? out.livello-l2 : null};
+  });
+  return out;
+}
+
+/* ── SCORE POTENZIALE DI UN GIRO ─────────────────────────────────────────
+   Arccos lo chiama Round Potential e lo calcola sul percentile del "goal
+   handicap". Qui il termine di confronto e' la TUA abitudine — la finestra
+   stabile di 20 giri — che per un giro singolo e' il metro giusto: "questo giro,
+   col tuo putting solito, sarebbe stato X". Si contano solo i reparti andati
+   SOTTO l'abitudine: un reparto andato meglio del solito non e' un colpo
+   "recuperabile", e sommarlo gonfierebbe il potenziale.                       */
+function statPotenziale(a, MS){
+  if(!a || !a.completo || !MS) return null;
+  const cats=['tee','approccio','corto','putting'];
+  const per18 = a.calc.nBuche>0 ? 18/a.calc.nBuche : 1;
+  const righe=[];
+  cats.forEach(k=>{
+    const d=(a.calc.sgCat[k]*per18) - MS.cat[k];
+    if(d < -0.05) righe.push({cat:k, delta:-d});
+  });
+  righe.sort((x,y)=>y.delta-x.delta);
+  const tot=righe.reduce((s,x)=>s+x.delta,0)/per18;
+  return {score:a.calc.score, righe:righe, recuperabili:tot,
+    potenziale: a.calc.score-tot, nRif:MS.n};
+}
+
+/* ── ARCO DEL GIRO ──────────────────────────────────────────────────────
+   Lo strokes gained CUMULATO buca per buca: dove il giro si e' deciso. Arccos la
+   chiama Round Arc. I sei blocchi da tre buche che avevamo sono un'aggregazione
+   piu' grossolana della stessa informazione; sul giro singolo la curva e'
+   strettamente migliore.                                                      */
+function statArco(a){
+  if(!a || !a.completo) return null;
+  let cum=0; const punti=[], sg=[];
+  a.bucheCalc.forEach(b=>{ cum+=(b.sg||0); sg.push(b.sg||0); punti.push({x:String(b.buca), y:cum}); });
+  let best=null, worst=null;
+  const W=3;
+  for(let i=0;i+W<=sg.length;i++){
+    const s=sg.slice(i,i+W).reduce((t,v)=>t+v,0);
+    if(!best || s>best.s) best={i:i, s:s};
+    if(!worst || s<worst.s) worst={i:i, s:s};
+  }
+  return {punti:punti, tot:cum, best:best, worst:worst, W:W};
+}
+
 function statFairway(A){
   let tot=0,presi=0;
   A.forEach(g=>g.bucheCalc.forEach(b=>{
@@ -2729,39 +3052,57 @@ function statBaseStabile(){
   if(tutti.length<3) return null;
   return statBase(tutti.map(g=>analizzaGiro(g,'tour')));
 }
+/* v10 — RIFERIMENTI SCRATCH per la scheda Base.
+   Nella ver07 questa colonna non c'era, con la motivazione che i numeri che
+   circolano non hanno fonte verificata. Ora la fonte c'e': l'ebook Strokes Gained
+   di Shot Scope pubblica la tabella per handicap, e l'articolo sul profilo
+   scratch i punteggi per tipo di par e i tre putt.
+   Classe: dato divulgato, numerosita' NON dichiarata dalla fonte.             */
+const RIF_SCRATCH = {
+  vsPar:0.83, fir:50, gir:61, puttGiro:29.4, trePutt:3, scr:47, sand:37,
+  pen:0.56, doppi:0.7, spread:17,
+  par:{3:3.2, 4:4.2, 5:4.8}
+};
+
 /* La scheda Base, riusata identica dalle statistiche di periodo e dal giro
    singolo: cambia solo cosa c'e' nella colonna di confronto. */
 function cardStatBase(SB, RIF, titolo, notaConfronto){
   const f1=v=>v===null||v===undefined?'\u2014':(Math.round(v*10)/10).toFixed(1).replace('.',',');
   const f2=v=>v===null||v===undefined?'\u2014':v.toFixed(2).replace('.',',');
   const pctS=v=>v===null||v===undefined?'\u2014':Math.round(v)+'%';
-  const riga=(nome,val,rif,nota)=>'<tr><td>'+nome+(nota?' <span class="dim" style="font-size:10px">'+nota+'</span>':'')+'</td>'+
-    '<td class="n"><b>'+val+'</b></td><td class="n dim">'+(rif===undefined||rif===null?'\u2014':rif)+'</td></tr>';
+  const riga=(nome,val,rif,nota,scr)=>'<tr><td>'+nome+(nota?' <span class="dim" style="font-size:10px">'+nota+'</span>':'')+'</td>'+
+    '<td class="n"><b>'+val+'</b></td><td class="n dim">'+(rif===undefined||rif===null?'\u2014':rif)+'</td>'+
+    '<td class="n dim">'+(scr===undefined||scr===null?'\u2014':scr)+'</td></tr>';
   const penTxt=Object.keys(SB.penT).length?
     Object.keys(SB.penT).sort((a,b)=>SB.penT[b]-SB.penT[a]).map(k=>SB.penT[k]+' '+esc(PENALITA_NOME[k]||k)).join(' \u00b7 '):null;
   return '<div class="card"><h2>'+titolo+'</h2>'+
     '<div class="hint">Conteggi semplici su definizioni dichiarate, '+SB.nG+' giri e '+SB.buche+' buche. '+
     notaConfronto+'</div>'+
-    '<table class="stat"><thead><tr><th></th><th class="n">Tu</th><th class="n">Media 20</th></tr></thead><tbody>'+
-    riga('Punteggio medio', f1(SB.score)+' <span class="dim">('+sgn(SB.vsPar,1)+')</span>', RIF?f1(RIF.score)+' <span style="font-size:10px">('+sgn(RIF.vsPar,1)+')</span>':null)+
+    '<table class="stat"><thead><tr><th></th><th class="n">Tu</th><th class="n">Media<br>20</th>'+
+      '<th class="n">Scr.</th></tr></thead><tbody>'+
+    riga('Punteggio', f1(SB.score)+' <span class="dim">('+sgnIt(SB.vsPar,1)+')</span>', RIF?f1(RIF.score):null, '', sgn(RIF_SCRATCH.vsPar,1))+
     riga('Migliore \u00b7 peggiore', sgn(SB.best,0)+' \u00b7 '+sgn(SB.worst,0), RIF?sgn(RIF.best,0)+' \u00b7 '+sgn(RIF.worst,0):null)+
-    riga('FIR', SB.fir?pctS(SB.fir.pct):'\u2014', RIF&&RIF.fir?pctS(RIF.fir.pct):null, SB.fir?'('+SB.fir.ok+'/'+SB.fir.tot+')':'')+
-    riga('GIR', pctS(SB.gir.pct), RIF?pctS(RIF.gir.pct):null, '('+SB.gir.ok+'/'+SB.gir.tot+')')+
-    riga('Putt per giro', f1(SB.puttGiro), RIF?f1(RIF.puttGiro):null, '('+f2(SB.puttBuca)+'/buca)')+
-    riga('Un putt', pctS(SB.unPutt), RIF?pctS(RIF.unPutt):null, 'delle buche')+
-    riga('Tre putt o piu\u2019', pctS(SB.trePutt), RIF?pctS(RIF.trePutt):null, 'delle buche')+
-    riga('Scrambling', SB.scr?pctS(SB.scr.pct):'\u2014', RIF&&RIF.scr?pctS(RIF.scr.pct):null, SB.scr?'('+SB.scr.ok+'/'+SB.scr.tot+')':'')+
-    riga('Sand save', SB.sand?pctS(SB.sand.pct):'\u2014', RIF&&RIF.sand?pctS(RIF.sand.pct):null, SB.sand?'('+SB.sand.ok+'/'+SB.sand.tot+')':'')+
-    riga('Penalita\u2019 per giro', f2(SB.penGiro), RIF?f2(RIF.penGiro):null)+
-    riga('Birdie o meglio per giro', f2(SB.birdiePerGiro), RIF?f2(RIF.birdiePerGiro):null)+
-    riga('Doppi o peggio per giro', f2(SB.doppiPerGiro), RIF?f2(RIF.doppiPerGiro):null)+
+    riga('FIR', SB.fir?pctS(SB.fir.pct):'\u2014', RIF&&RIF.fir?pctS(RIF.fir.pct):null, SB.fir?'('+SB.fir.ok+'/'+SB.fir.tot+')':'', RIF_SCRATCH.fir+'%')+
+    riga('GIR', pctS(SB.gir.pct), RIF?pctS(RIF.gir.pct):null, '('+SB.gir.ok+'/'+SB.gir.tot+')', RIF_SCRATCH.gir+'%')+
+    riga('Putt per giro', f1(SB.puttGiro), RIF?f1(RIF.puttGiro):null, '('+f2(SB.puttBuca)+'/buca)', f1(RIF_SCRATCH.puttGiro))+
+    riga('Un putt', pctS(SB.unPutt), RIF?pctS(RIF.unPutt):null, 'buche')+
+    riga('Tre putt o piu\u2019', pctS(SB.trePutt), RIF?pctS(RIF.trePutt):null, 'buche', RIF_SCRATCH.trePutt+'%')+
+    riga('Scrambling', SB.scr?pctS(SB.scr.pct):'\u2014', RIF&&RIF.scr?pctS(RIF.scr.pct):null, SB.scr?'('+SB.scr.ok+'/'+SB.scr.tot+')':'', RIF_SCRATCH.scr+'%')+
+    riga('Sand save', SB.sand?pctS(SB.sand.pct):'\u2014', RIF&&RIF.sand?pctS(RIF.sand.pct):null, SB.sand?'('+SB.sand.ok+'/'+SB.sand.tot+')':'', RIF_SCRATCH.sand+'%')+
+    riga('Penalita\u2019/giro', f2(SB.penGiro), RIF?f2(RIF.penGiro):null, '', f2(RIF_SCRATCH.pen))+
+    riga('Birdie+/giro', f2(SB.birdiePerGiro), RIF?f2(RIF.birdiePerGiro):null)+
+    riga('Doppi+/giro', f2(SB.doppiPerGiro), RIF?f2(RIF.doppiPerGiro):null, '', f2(RIF_SCRATCH.doppi))+
     '</tbody></table>'+
     (penTxt?'<div class="stcap"><b>Da dove vengono le penalita\u2019:</b> '+penTxt+'.</div>':'')+
     '<div class="stcap">FIR sui par 4 e 5 (palla in fairway o in green col colpo dal tee). Scrambling: buca chiusa '+
     'in par o meglio senza GIR. Sand save: colpo dalla sabbia entro i 30 yd e buca in par o meglio (convenzione '+
-    'piu\u2019 stretta di quella del Tour). Riferimento esterno con fonte verificata: GIR del giocatore scratch '+
-    '62%, sand save 37% (Shot Scope, numerosita\u2019 non dichiarata). Gli altri riferimenti esterni che circolano '+
-    'non hanno fonte solida: il confronto onesto e\u2019 la tua finestra stabile.</div></div>';
+    'piu\u2019 stretta di quella del Tour).<br><br>La colonna <b>Scr.</b> e\u2019 il giocatore scratch secondo '+
+    'l\u2019ebook Strokes Gained di Shot Scope e il suo profilo dello scratch: punteggio +0,8 sul par, FIR 50%, '+
+    'GIR 61%, 29,4 putt, tre putt sul 3% delle buche, scrambling 47%, sand save 37%, 0,56 penalita\u2019 a giro. '+
+    'I doppi per giro (0,7) vengono dalle statistiche di scoring del Tour. <b>Classe: dato divulgato, numerosita\u2019 '+
+    'non dichiarata dalla fonte</b> \u2014 ordine di grandezza, non un metro al decimale. La colonna che conta resta '+
+    'la tua finestra stabile.<br><br>Lo <b>spread migliore-peggiore</b> di riferimento e\u2019 17 colpi (mediana 17, '+
+    'Stagner): quello e\u2019 misurato su una stagione intera, quindi confrontalo solo con un periodo lungo.</div></div>';
 }
 
 function statPerTipo(A){
@@ -4502,7 +4843,20 @@ VIEWS.statistiche = function(){
               '<td class="n dim">'+x.rif+'%</td>'+
               '<td class="n">'+x.finireM.toFixed(2).replace('.',',')+'</td></tr>').join('')+
             '</tbody></table>':'')+
-          '<div class="stcap">Regola dichiarata: un tentativo per buca, il primo colpo da fuori dal green entro le '+
+          (function(){
+            const L=[['fairway','Dal fairway'],['rough','Dal rough'],['sabbia','Dalla sabbia'],['recupero','Dal recupero']];
+            const righe=L.filter(l=>GC.perLie[l[0]] && GC.perLie[l[0]].n>0);
+            if(!righe.length) return '';
+            return '<table class="stat" style="margin-top:10px"><thead><tr><th>Up and down per lie</th>'+
+              '<th class="n">N</th><th class="n">Riuscito</th></tr></thead><tbody>'+
+              righe.map(l=>{ const o=GC.perLie[l[0]];
+                return '<tr'+(o.n>=N_MIN_FASCIA?'':' style="opacity:.5"')+'><td>'+l[1]+'</td>'+
+                  '<td class="n">'+o.n+'</td><td class="n"><b>'+Math.round(100*o.ok/o.n)+'%</b></td></tr>';}).join('')+
+              '</tbody></table>';
+          })()+
+          '<div class="stcap">Lo <b>scrambling per lie</b> qui sopra era gia\u2019 calcolato dalla ver09 e non '+
+          'veniva stampato: il Tour lo pubblica separando rough, sabbia e altro.<br><br>'+
+          'Regola dichiarata: un tentativo per buca, il primo colpo da fuori dal green entro le '+
           '50 yd, qualunque colpo lo abbia prodotto \u2014 quindi include il pitch di terzo su un par 5, non solo lo '+
           'scrambling dopo un green mancato (che l\u2019app calcola a parte, sulle buche senza GIR). Contare ogni '+
           'posizione conterebbe due volte la stessa buca quando il primo chip e\u2019 sbagliato, gonfiando il '+
@@ -4700,6 +5054,14 @@ VIEWS.statistiche = function(){
           '<td class="n dim">'+CV.doppioPeggio+' buche</td></tr>'+
         '<tr><td>Bounce back <span class="dim">(birdie o meglio subito dopo un over par)</span></td>'+
           '<td class="n">'+pctc(CV.bounceOk,CV.bounceOpp)+'</td><td class="n dim">'+CV.bounceOk+' su '+CV.bounceOpp+'</td></tr>'+
+        '<tr><td>Reverse bounce back <span class="dim">(bogey o peggio subito dopo un birdie)</span></td>'+
+          '<td class="n">'+pctc(CV.revKo,CV.revOpp)+'</td><td class="n dim">'+CV.revKo+' su '+CV.revOpp+'</td></tr>'+
+        '<tr><td>Par breakers <span class="dim">(buche sotto il par)</span></td>'+
+          '<td class="n">'+(CV.parBreakers!==null?CV.parBreakers.toFixed(1)+'%':'\u2014')+'</td>'+
+          '<td class="n dim">'+CV.birdiePiu+' buche</td></tr>'+
+        '<tr><td>Rapporto birdie / bogey+</td>'+
+          '<td class="n">'+(CV.rapporto!==null?CV.rapporto.toFixed(2).replace('.',','):'\u2014')+'</td>'+
+          '<td class="n dim">'+CV.birdiePiu+' : '+CV.bogeyPeggio+'</td></tr>'+
         '</tbody></table>'+
         (CV.doppioPeggio>0 && penK.length ?
           '<div class="stcap"><b>Da dove vengono i doppi:</b> '+
@@ -4821,14 +5183,18 @@ VIEWS.statistiche = function(){
           '</div>'+
           '<div class="n">'+b.distMedia+' m</div></div>'));
       });
+      cr.appendChild(el('<div class="stcap">La colonna <b>Lavoro</b> e\u2019 il <b>70\u00b0 percentile</b> delle '+
+        'distanze percorse: e\u2019 la distanza da usare per SCEGLIERE il bastone. La media e\u2019 il numero '+
+        'sbagliato per quello, perche\u2019 la tirano giu\u2019 i colpi mal colpiti \u2014 Arccos usa lo stesso '+
+        'criterio e lo chiama Smart Distance. Compare da cinque colpi misurati in su.</div>'));
       cr.appendChild(el('<details class="numeri"><summary>vedi i numeri</summary><table class="stat">'+
         '<thead><tr><th>Bastone</th><th class="n">Colpi</th><th class="n">Media</th>'+
-          '<th class="n">Lungo</th><th class="n">Lato</th><th class="n">Settore</th></tr></thead><tbody>'+
+          '<th class="n">Lavoro</th><th class="n">Lungo</th><th class="n">Lato</th></tr></thead><tbody>'+
         conD.map(b=>'<tr><td>'+esc(b.bastone)+'</td><td class="n">'+b.nMis+'</td>'+
-          '<td class="n">'+b.distMedia+' m</td>'+
+          '<td class="n dim">'+b.distMedia+'</td>'+
+          '<td class="n"><b>'+(b.p70!==null?b.p70+' m':'—')+'</b></td>'+
           '<td class="n">'+(b.disp!==null?'± '+b.disp:'—')+'</td>'+
-          '<td class="n">'+(b.latDisp!==null?'± '+b.latDisp:'—')+'</td>'+
-          '<td class="n dim">'+Math.round(b.copertura*100)+'%</td></tr>').join('')+
+          '<td class="n">'+(b.latDisp!==null?'± '+b.latDisp:'—')+'</td></tr>').join('')+
         '</tbody></table></details>'+
         '<div class="stcap">"Lungo" e’ lo scarto tipo della distanza percorsa, "Lato" quello dello scostamento '+
         'laterale: la seconda colonna esiste solo grazie al settore di esito e si riempie da tre giri in avanti. '+
@@ -5033,11 +5399,16 @@ VIEWS.statistiche = function(){
     p2.appendChild(el('<div class="card"><h2>Rendimento per tipo di buca</h2>'+
       '<div class="hint">I par 5 sono occasioni, i par 3 no: separarli dice dove stai lasciando colpi.</div>'+
       '<table class="stat"><thead><tr><th>Buca</th><th class="n">Giocate</th><th class="n">Sul par</th>'+
-        '<th class="n">Green</th><th class="n">Putt</th></tr></thead><tbody>'+
-        PP.map(x=>'<tr><td>Par '+x.par+'</td><td class="n">'+x.n+'</td>'+
+        '<th class="n">Scr.</th><th class="n">Green</th><th class="n">Putt</th></tr></thead><tbody>'+
+        PP.map(x=>{
+          const rs=RIF_SCRATCH.par[x.par];
+          return '<tr><td>Par '+x.par+'</td><td class="n">'+x.n+'</td>'+
           '<td class="n '+(x.media<=0?'pos':'neg')+'">'+sgn(x.media,2)+'</td>'+
-          '<td class="n">'+Math.round(x.girPct)+'%</td><td class="n">'+x.puttB.toFixed(2)+'</td></tr>').join('')+
-      '</tbody></table></div>'));
+          '<td class="n dim">'+(rs!==undefined?sgn(rs-x.par,1):'\u2014')+'</td>'+
+          '<td class="n">'+Math.round(x.girPct)+'%</td><td class="n">'+x.puttB.toFixed(2)+'</td></tr>';}).join('')+
+      '</tbody></table><div class="stcap">La colonna <b>Scr.</b> e\u2019 il giocatore scratch secondo Shot Scope: '+
+      'par 3 3,2 \u00b7 par 4 4,2 \u00b7 par 5 4,8, qui espressi sul par. Numerosita\u2019 non dichiarata dalla '+
+      'fonte.</div></div>'));
   }
 
   const BL=statBlocchi(A);
@@ -5096,10 +5467,238 @@ VIEWS.statistiche = function(){
       '<div class="stcap">'+cap+' Solo giri da 18 buche.</div></div>'));
   }
 
+  /* ══ v10 — I PANNELLI NUOVI ═══════════════════════════════════════════════
+     Tutti derivati dallo schema v9. Vengono appesi qui e ricollocati per titolo
+     dalla mappa piu' sotto, come tutti gli altri.                            */
+  if(completi.length){
+    /* ── dal tee: good drive, residua, trouble, recupero ── */
+    {
+      const DR=statDriving(completi);
+      if(DR.opp>0){
+        const rifRes4=136.5/1;   // 149,1 yd medi dello studio ShotLink, in metri
+        p1.appendChild(el('<div class="card"><h2>Dal tee: good drive e distanza residua</h2>'+
+          '<div class="hint">Il FIR punisce allo stesso modo il rough a due metri e la palla ingiocabile. '+
+          'Il <b>good drive</b> misura cio\u2019 che al drive si chiede davvero: non compromettere la buca.</div>'+
+          '<div class="kpigrid">'+
+            '<div class="kpi"'+(DR.opp>=N_MIN_FASCIA?'':' style="opacity:.55"')+'><div class="lab">Good drive</div>'+
+              '<div class="v">'+(DR.pct!==null?DR.pct.toFixed(0)+'<span class="u">%</span>':'\u2014')+'</div>'+
+              '<div class="sub">'+DR.good+' su '+DR.opp+' \u00b7 Tour 82,5%</div></div>'+
+            '<div class="kpi"><div class="lab">Drive nei guai</div>'+
+              '<div class="v">'+(DR.troubleGiro!==null?DR.troubleGiro.toFixed(1):'\u2014')+'</div>'+
+              '<div class="sub">per giro \u00b7 '+DR.trouble+' in totale</div></div>'+
+            '<div class="kpi"><div class="lab">Residua par 4</div>'+
+              '<div class="v">'+(DR.res4.m!==null?Math.round(DR.res4.m)+'<span class="u">m</span>':'\u2014')+'</div>'+
+              '<div class="sub">'+DR.res4.n+' buche \u00b7 Tour 134\u2013139 m</div></div>'+
+            '<div class="kpi"><div class="lab">Residua par 5</div>'+
+              '<div class="v">'+(DR.res5.m!==null?Math.round(DR.res5.m)+'<span class="u">m</span>':'\u2014')+'</div>'+
+              '<div class="sub">'+DR.res5.n+' buche \u00b7 Tour 240\u2013248 m</div></div>'+
+          '</div>'+
+          '<table class="stat" style="margin-top:10px"><tbody>'+
+            '<tr><td>Colpi di recupero per giro</td>'+
+              '<td class="n"><b>'+(DR.recGiro!==null?DR.recGiro.toFixed(2).replace('.',','):'\u2014')+'</b></td>'+
+              '<td class="n dim" style="font-size:11px">scratch 0,39 nel giro migliore, 1,19 nel peggiore</td></tr>'+
+          '</tbody></table>'+
+          '<div class="stcap"><b>Good drive:</b> su par 4 e 5, fairway centrati piu\u2019 i casi in cui il drive '+
+          'ha mancato il fairway ma la buca e\u2019 arrivata in green in regulation. Un drive con penalita\u2019 '+
+          'non e\u2019 mai buono, qualunque sia il lie dopo il drop. Riferimenti Anova Golf: PGA Tour 82,5%, '+
+          'college maschile 83%, Pac-12 84,5%.<br><br><b>Distanza residua:</b> quanto resta al buco dopo il drive. '+
+          'E\u2019 l\u2019unico numero che fonde distanza e precisione in una cosa sola: due giocatori con lo '+
+          'stesso FIR e la stessa distanza media possono avere residue diverse di venti metri. I drive con '+
+          'penalita\u2019 sono esclusi. Riferimento: studio ShotLink R09 sul Tour.<br><br><b>Nei guai:</b> drive '+
+          'finiti in recupero o con penalita\u2019. <b>Recupero:</b> il campo lo avevamo, ma solo come audit della '+
+          'deriva di classificazione in Qualita\u2019 del dato \u2014 la\u2019 controlla il giudice, qui misura '+
+          'il gioco. Riferimento Arccos.</div></div>'));
+      }
+    }
+    /* ── quanto rende ogni bastone verso il green ── */
+    {
+      const BV=statBastoneVerde(completi).filter(x=>x.n>=5);
+      if(BV.length) p1.appendChild(el('<div class="card"><h2>Quanto rende ogni bastone verso il green</h2>'+
+        '<div class="hint">Non quanto porta, ma quanto rende: green presi e prossimita\u2019 per bastone. '+
+        'E\u2019 l\u2019informazione che serve alla scelta, e i dati c\u2019erano gia\u2019.</div>'+
+        '<table class="stat"><thead><tr><th>Bastone</th><th class="n">Colpi</th><th class="n">Da</th>'+
+          '<th class="n">Green</th><th class="n">Lascia</th><th class="n">SG</th></tr></thead><tbody>'+
+        BV.map(x=>'<tr'+(x.solido?'':' style="opacity:.5"')+'><td>'+esc(x.bastone)+'</td>'+
+          '<td class="n">'+x.n+'</td>'+
+          '<td class="n">'+(x.da!==null?Math.round(x.da)+' m':'\u2014')+'</td>'+
+          '<td class="n">'+Math.round(x.greenPct)+'%</td>'+
+          '<td class="n">'+(x.prox!==null?x.prox.toFixed(1).replace('.',',')+' m':'\u2014')+'</td>'+
+          '<td class="n '+(x.sgColpo>=0?'pos':'neg')+'">'+sgn(x.sgColpo,2)+'</td></tr>').join('')+
+        '</tbody></table><div class="stcap">Colpi verso il green (approccio e gioco corto), raggruppati per '+
+        'bastone. "Da" e\u2019 la distanza media di partenza, "Lascia" la prossimita\u2019 quando il green viene '+
+        'preso. Righe sotto i '+N_MIN_FASCIA+' colpi in grigio. Shot Scope e Arccos mostrano le stesse due '+
+        'colonne.</div></div>'));
+    }
+    /* ── gapping ── */
+    {
+      const GP=statGapping(statBastoni(sel));
+      if(GP.righe.length>=3){
+        const col=x=>x.stato==='buco'?'var(--rosso)':(x.stato==='sovrapposti'?'var(--ambra)':'inherit');
+        const eti=x=>x.stato==='buco'?'buco':(x.stato==='sovrapposti'?'sovrapposti':'');
+        p1.appendChild(el('<div class="card"><h2>Gapping: i salti fra i bastoni</h2>'+
+          '<div class="verd" style="font-size:14px">'+(GP.buchi||GP.sovrapposti
+            ? (GP.buchi?GP.buchi+(GP.buchi===1?' salto troppo grande':' salti troppo grandi'):'')+
+              (GP.buchi&&GP.sovrapposti?' e ':'')+
+              (GP.sovrapposti?GP.sovrapposti+(GP.sovrapposti===1?' coppia sovrapposta':' coppie sovrapposte'):'')+'.'
+            : 'I salti sono tutti dentro l\u2019intervallo utile.')+'</div>'+
+          '<table class="stat"><thead><tr><th>Coppia</th><th class="n">Salto</th><th class="n"></th></tr></thead><tbody>'+
+          GP.righe.map(x=>'<tr><td>'+esc(x.a)+' \u2192 '+esc(x.b)+' <span class="dim" style="font-size:10px">('+
+            x.p70a+'\u2192'+x.p70b+' m)</span></td>'+
+            '<td class="n" style="color:'+col(x)+'"><b>'+Math.round(x.gap)+' m</b></td>'+
+            '<td class="n dim" style="font-size:10px">'+eti(x)+'</td></tr>').join('')+
+          '</tbody></table>'+
+          '<div class="stcap">Salti fra i <b>70\u00b0 percentili</b> di bastoni adiacenti. Intervallo utile '+
+          'dichiarato: '+GAP_MIN_M+'\u2013'+GAP_MAX_M+' m (FlightScope consiglia 10\u201315 yard di carry). '+
+          '<b>\u26a0 Approssimato, e va detto:</b> noi misuriamo la distanza <i>percorsa</i>, non il carry, quindi '+
+          'un bastone che rotola molto sembra piu\u2019 lungo di quanto porta in aria. Serve a vedere buchi e '+
+          'sovrapposizioni, non a scegliere le lofts.</div></div>'));
+      }
+    }
+    /* ── bunker: greenside contro fairway ── */
+    {
+      const BK=statBunker(completi);
+      if(BK.greenside.n+BK.fairway.n>0){
+        const riga=(nome,o,rifCosto)=>'<tr'+(o.solido?'':' style="opacity:.55"')+'><td>'+nome+'</td>'+
+          '<td class="n">'+o.n+'</td>'+
+          '<td class="n">'+(o.perGiro!==null?o.perGiro.toFixed(2).replace('.',','):'\u2014')+'</td>'+
+          '<td class="n '+((o.costo||0)<=0?'pos':'neg')+'">'+(o.costo!==null?sgn(o.costo,2):'\u2014')+'</td>'+
+          '<td class="n dim">'+rifCosto+'</td></tr>';
+        p1.appendChild(el('<div class="card"><h2>Bunker: greenside contro fairway</h2>'+
+          '<div class="hint">Il sand save conta solo entro le 30 yard, quindi il <b>bunker di fairway non era '+
+          'misurato da nessuna parte</b>. Il Tour li separa, e c\u2019e\u2019 un motivo.</div>'+
+          '<table class="stat"><thead><tr><th></th><th class="n">Colpi</th><th class="n">/giro</th>'+
+            '<th class="n">Costo</th><th class="n">Scr.</th></tr></thead><tbody>'+
+          riga('Greenside <span class="dim" style="font-size:10px">(entro 30 yd)</span>', BK.greenside, '+0,43')+
+          riga('Di fairway <span class="dim" style="font-size:10px">(oltre 30 yd)</span>', BK.fairway, '+0,19')+
+          '</tbody></table>'+
+          '<div class="stcap">"Costo" e\u2019 il punteggio medio sul par delle buche in cui e\u2019 finito in quel '+
+          'tipo di bunker. Il riferimento Shot Scope ha un esito controintuitivo: per lo <b>scratch</b> il greenside '+
+          'costa +0,43 e il fairway solo +0,19, mentre all\u2019handicap 20 si inverte (+0,42 contro +0,55). Al tuo '+
+          'livello il problema atteso e\u2019 il greenside \u2014 ma il numero da guardare e\u2019 il tuo. '+
+          'Classe del riferimento: dato divulgato senza numerosita\u2019.</div></div>'));
+      }
+    }
+    /* ── chip multipli ── */
+    {
+      const CM=statChipMultipli(completi);
+      if(CM.buche>0) p1.appendChild(el('<div class="card"><h2>Chip multipli entro le 50 yard</h2>'+
+        '<div class="hint">Quante volte a giro serve <b>piu\u2019 di un colpo</b> di gioco corto per arrivare in '+
+        'green. E\u2019 il complemento esatto dell\u2019up and down, che con la regola "un tentativo per buca" '+
+        'esclude per costruzione il secondo chip \u2014 cioe\u2019 il caso peggiore.</div>'+
+        '<div class="verd">'+(CM.perGiro!==null?CM.perGiro.toFixed(1).replace('.',','):'\u2014')+
+        ' buche per giro con due o piu\u2019 colpi corti</div>'+
+        '<div class="legg">'+CM.multi+' buche su '+CM.buche+' \u00b7 '+
+        (CM.colpiGiro!==null?CM.colpiGiro.toFixed(1).replace('.',',')+' colpi corti a giro in totale':'')+'</div>'+
+        '<div class="stcap">Riferimento Shot Scope per fascia di punteggio: <b>4,1</b> nei giri in 100, <b>3,2</b> '+
+        'in 90, <b>2,1</b> in 80, <b>1,2</b> in 70, <b>0,9</b> in 60. Numerosita\u2019 non dichiarata dalla '+
+        'fonte.</div></div>'));
+    }
+    /* ── putting: le letture che separano ── */
+    {
+      const PA=statPuttAvanzato(completi);
+      if(PA.girN>0 || PA.nPrimo>0) p1.appendChild(el('<div class="card"><h2>Putting: le letture che separano</h2>'+
+        '<div class="hint">Putt per giro peggiora sia se putti male sia se arrivi lontano. Queste due separano le '+
+        'due cose: i putt sulle sole buche in regulation, e quanto lontano arrivi.</div>'+
+        '<div class="kpigrid">'+
+          '<div class="kpi"'+(PA.girN>=N_MIN_FASCIA?'':' style="opacity:.55"')+'><div class="lab">Putt per GIR</div>'+
+            '<div class="v">'+(PA.puttGir!==null?PA.puttGir.toFixed(2).replace('.',','):'\u2014')+'</div>'+
+            '<div class="sub">'+PA.girN+' buche in regulation</div></div>'+
+          '<div class="kpi"><div class="lab">Primo putt, in GIR</div>'+
+            '<div class="v">'+(PA.primoGir!==null?PA.primoGir.toFixed(1).replace('.',',')+'<span class="u">m</span>':'\u2014')+'</div>'+
+            '<div class="sub">'+PA.nPrimoGir+' buche</div></div>'+
+          '<div class="kpi"><div class="lab">Primo putt, tutte</div>'+
+            '<div class="v">'+(PA.primo!==null?PA.primo.toFixed(1).replace('.',',')+'<span class="u">m</span>':'\u2014')+'</div>'+
+            '<div class="sub">rif. amatoriale ~4,6 m</div></div>'+
+          '<div class="kpi"><div class="lab">Corti mancati</div>'+
+            '<div class="v">'+(PA.cortiMancatiGiro!==null?PA.cortiMancatiGiro.toFixed(1).replace('.',','):'\u2014')+'</div>'+
+            '<div class="sub">entro 5 ft, per giro</div></div>'+
+        '</div>'+
+        '<table class="stat" style="margin-top:10px"><tbody>'+
+          '<tr><td>Imbucati entro i 5 ft</td><td class="n"><b>'+(PA.cortiPct!==null?Math.round(PA.cortiPct)+'%':'\u2014')+
+            '</b></td><td class="n dim" style="font-size:11px">'+(PA.corti-PA.cortiMancati)+' su '+PA.corti+'</td></tr>'+
+          '<tr><td>Metri di putt imbucati per giro</td><td class="n"><b>'+
+            (PA.footageGiro!==null?PA.footageGiro.toFixed(1).replace('.',','):'\u2014')+' m</b></td>'+
+            '<td class="n dim" style="font-size:11px">Shot Scope: total footage</td></tr>'+
+        '</tbody></table>'+
+        '<div class="stcap"><b>Putt per GIR</b> e\u2019 il putting al netto della qualita\u2019 '+
+        'dell\u2019approccio \u2014 il Tour la chiama GIR Putting Average. Nessun riferimento numerico pubblicato '+
+        'ha superato la verifica, quindi qui il confronto e\u2019 solo con te stesso nel tempo.<br><br>'+
+        '<b>Primo putt</b>: la versione "in GIR" e\u2019 quella pulita, perche\u2019 esclude le buche in cui sei '+
+        'arrivato col chip. Riferimento amatoriale ~15 ft (4,6 m); la prossimita\u2019 media d\u2019approccio dello '+
+        'scratch e\u2019 41,7 ft (12,7 m) contro 68 ft dell\u2019handicap 15 \u2014 grandezza affine, non la stessa '+
+        'cosa.<br><br><b>Corti mancati</b>: riferimento Shot Scope per fascia di punteggio, 4,6 nei giri in 100 fino '+
+        'a 1,6 in quelli in 60. E l\u201984% dei putt mancati oltre i 5 ft finisce corto: la griglia dei settori '+
+        'nella scheda Putt ti dice se e\u2019 il tuo caso.</div></div>'));
+    }
+    /* ── stroke index ── */
+    {
+      const SI=statPerSI(completi);
+      if(SI.fasce.length) p1.appendChild(el('<div class="card"><h2>Rendimento per fascia di stroke index</h2>'+
+        '<div class="hint">Lo stroke index sta in ogni buca da sempre, copiato dall\u2019archivio campi, e non era '+
+        'mai entrato in nessuna analisi. <b>Nessuna app di gioco lo espone</b>: questa lettura non l\u2019abbiamo '+
+        'copiata da nessuno.</div>'+
+        '<table class="stat"><thead><tr><th>Fascia</th><th class="n">Buche</th><th class="n">Sul par</th>'+
+          '<th class="n">Green</th><th class="n">Bogey+</th><th class="n">SG</th></tr></thead><tbody>'+
+        SI.fasce.map(x=>'<tr'+(x.solido?'':' style="opacity:.5"')+'><td>'+x.nome+'</td>'+
+          '<td class="n">'+x.n+'</td>'+
+          '<td class="n '+(x.media<=0?'pos':'neg')+'">'+sgn(x.media,2)+'</td>'+
+          '<td class="n">'+Math.round(x.girPct)+'%</td>'+
+          '<td class="n">'+Math.round(x.bogeyPct)+'%</td>'+
+          '<td class="n '+((x.sgB||0)>=0?'pos':'neg')+'">'+(x.sgB!==null?sgn(x.sgB,2):'\u2014')+'</td></tr>').join('')+
+        '</tbody></table>'+
+        '<div class="stcap">Lo stroke index viene dalla carta del percorso e dice quanto una buca e\u2019 '+
+        'considerata difficile. La domanda a cui risponde: <b>perdi colpi dove e\u2019 previsto perderli, o dove '+
+        'non dovresti?</b> Se il rendimento sulle sei facili e\u2019 vicino a quello sulle sei difficili, il '+
+        'problema non e\u2019 la difficolta\u2019 della buca.'+
+        (SI.senzaSI?' '+SI.senzaSI+' buche non hanno lo stroke index e sono escluse.':'')+
+        '<br><br>E\u2019 anche il ponte piu\u2019 promettente verso lo storico federale: le 386 gare hanno CR e '+
+        'slope, e lo stroke index e\u2019 la grandezza che parla la stessa lingua.</div></div>'));
+    }
+    /* ── il livello, reparto per reparto ── */
+    {
+      const LV=statLivelli(A);
+      if(LV){
+        const cats=['tee','approccio','corto','putting'];
+        const best=cats.slice().sort((a,b)=>(LV.cat[b].guadagno||0)-(LV.cat[a].guadagno||0))[0];
+        p1.appendChild(el('<div class="card"><h2>Il tuo livello, reparto per reparto</h2>'+
+          '<div class="verd">Sul punteggio sei intorno a un <b>handicap '+
+          (LV.livello!==null?LV.livello.toFixed(1).replace('.',','):'\u2014')+'</b> '+
+          '('+sgnIt(LV.vsPar,1)+' sul par, '+LV.n+' giri)</div>'+
+          '<div class="legg">portando un reparto al livello Tour, il livello che ne uscirebbe</div>'+
+          '<table class="stat" style="margin-top:8px"><thead><tr><th>Se portassi al Tour</th>'+
+            '<th class="n">Sul par</th><th class="n">Livello</th><th class="n">Guadagno</th></tr></thead><tbody>'+
+          cats.map(k=>{
+            const c=LV.cat[k];
+            return '<tr'+(k===best?' style="font-weight:600"':'')+'><td>'+CAT_NOME[k]+'</td>'+
+              '<td class="n">'+sgn(c.vsPar,1)+'</td>'+
+              '<td class="n"><b>'+(c.livello!==null?c.livello.toFixed(1).replace('.',','):'\u2014')+'</b></td>'+
+              '<td class="n '+((c.guadagno||0)>0?'pos':'')+'">'+(c.guadagno!==null?'\u2212'+c.guadagno.toFixed(1).replace('.',','):'\u2014')+'</td></tr>';
+          }).join('')+
+          '</tbody></table>'+
+          '<div class="stcap"><b>Perche\u2019 questa tabella esiste:</b> "putting \u22120,8 colpi/giro" e\u2019 '+
+          'corretto e astratto. Broadie in Golfmetrics esprime ogni reparto come un handicap, e Clippd fa la stessa '+
+          'mossa con una scala 0-200 di cui non pubblica la formula. Qui la formula e\u2019 in chiaro, in due '+
+          'passi: la scala colpi-sul-par \u2192 handicap e\u2019 quella pubblicata da Shot Scope (hcp 0 +0,8 \u00b7 '+
+          '5 +6,3 \u00b7 10 +10,9 \u00b7 15 +17,4 \u00b7 20 +21,7 \u00b7 25 +29,0), interpolata; poi per ogni '+
+          'reparto si calcola il controfattuale, cioe\u2019 che punteggio faresti se quel reparto fosse a zero '+
+          'strokes gained lasciando gli altri come sono.<br><br><b>Due limiti dichiarati.</b> La scala e\u2019 sul '+
+          'punteggio rispetto al <i>par</i>, non al CR: su un campo dove il CR supera il par (Colline del Gavi: CR '+
+          '74,2 su par 73) il livello esce pessimistico di circa un colpo. E <b>non e\u2019 un indice WHS</b>: '+
+          'quello vero sta nella Dashboard, sulle 386 gare. Classe del riferimento: dato divulgato senza '+
+          'numerosita\u2019.</div></div>'));
+      }
+    }
+  }
+
   /* ---- v10: ricollocazione per titolo nelle sette schede ---- */
   const paneNew={}; TABS.forEach(t=>paneNew[t.k]=el('<div class="pane"></div>'));
   const MAPPA=[
     ['Dove stanno i colpi che perdi','sintesi'],['Cosa allenare','sintesi'],['Sintesi','sintesi'],
+    ['Il tuo livello, reparto per reparto','sintesi'],
+    ['Dal tee: good drive','lungo'],['Quanto rende ogni bastone','lungo'],['Gapping','lungo'],
+    ['Bunker: greenside contro fairway','corto'],['Chip multipli','corto'],
+    ['Putting: le letture che separano','putt'],
+    ['Rendimento per fascia di stroke index','incroci'],
     ['Quanto pesa ogni reparto','sintesi'],['Sto cambiando','sintesi'],
     ['Strokes gained','sintesi'],['Ogni giro rispetto alla tua media','sintesi'],['La tua media','sintesi'],
     ['Andamento nel tempo','sintesi'],['Andamento del punteggio','sintesi'],
@@ -5330,6 +5929,52 @@ VIEWS.riepilogoGiro = function(p){
     '</div>'));
   }
 
+  /* ══ v10: SCORE POTENZIALE — il controfattuale contro la tua abitudine ══ */
+  {
+    const MS=mediaStabile('tour');
+    const PT=statPotenziale(A, MS);
+    if(PT && PT.righe.length){
+      pane.sintesi.appendChild(el('<div class="card"><h2>Score potenziale</h2>'+
+        '<div class="verd">Con i tuoi valori abituali questo giro sarebbe stato <b>'+
+        PT.potenziale.toFixed(1).replace('.',',')+'</b> invece di '+PT.score+'</div>'+
+        '<div class="legg">'+PT.recuperabili.toFixed(1).replace('.',',')+' colpi lasciati indietro rispetto alla '+
+        'tua media degli ultimi '+PT.nRif+' giri</div>'+
+        '<table class="stat" style="margin-top:8px"><thead><tr><th>Reparto sotto la tua abitudine</th>'+
+          '<th class="n">Colpi</th></tr></thead><tbody>'+
+        PT.righe.map(x=>'<tr><td>'+CAT_NOME[x.cat]+'</td><td class="n neg">'+x.delta.toFixed(2).replace('.',',')+
+          '</td></tr>').join('')+
+        '</tbody></table>'+
+        '<div class="stcap">Arccos lo chiama <i>Round Potential</i> e lo calcola sul percentile di un handicap '+
+        'obiettivo. Qui il termine di confronto e\u2019 la <b>tua abitudine</b> \u2014 la finestra stabile dei 20 '+
+        'giri \u2014 che per un giro singolo e\u2019 il metro giusto: dice quanto di questo punteggio e\u2019 '+
+        'giornata e quanto e\u2019 livello.<br><br>Si contano solo i reparti andati <b>sotto</b> l\u2019abitudine: '+
+        'un reparto andato meglio del solito non e\u2019 un colpo recuperabile, e sommarlo gonfierebbe il '+
+        'potenziale.</div></div>'));
+    }
+  }
+
+  /* ══ v10: ARCO DEL GIRO — dove il giro si e' deciso ══ */
+  {
+    const AR=statArco(A);
+    if(AR && AR.punti.length>=9){
+      const nb=x=>x!==null&&x!==undefined? 'buche '+(x.i+1)+'\u2013'+(x.i+AR.W) : '\u2014';
+      pane.sintesi.appendChild(el('<div class="card"><h2>L\u2019arco del giro</h2>'+
+        '<div class="hint">Strokes gained <b>cumulato</b> buca per buca: dove il giro si e\u2019 deciso. '+
+        'Sopra lo zero stai guadagnando sulla baseline, sotto la stai perdendo.</div>'+
+        svgLinea(AR.punti, {h:120, zero:true, colore:'var(--dv-blue)', fmt:v=>sgn(v,1),
+          aria:'strokes gained cumulato buca per buca'})+
+        '<table class="stat" style="margin-top:8px"><tbody>'+
+        '<tr><td>Miglior tratto di tre buche</td><td class="n">'+nb(AR.best)+'</td>'+
+          '<td class="n pos">'+(AR.best?sgn(AR.best.s,1):'\u2014')+'</td></tr>'+
+        '<tr><td>Peggior tratto di tre buche</td><td class="n">'+nb(AR.worst)+'</td>'+
+          '<td class="n neg">'+(AR.worst?sgn(AR.worst.s,1):'\u2014')+'</td></tr>'+
+        '</tbody></table>'+
+        '<div class="stcap">Arccos la chiama <i>Round Arc</i>. I sei blocchi da tre buche delle statistiche di '+
+        'periodo sono un\u2019aggregazione piu\u2019 grossolana della stessa informazione: sul giro singolo la '+
+        'curva e\u2019 strettamente migliore, perche\u2019 mostra anche <i>quando</i> il giro ha girato.</div></div>'));
+    }
+  }
+
   /* ══ GIOCO LUNGO ══ */
   if(A.completo){
     const LT=statLatoTee([g]);
@@ -5365,6 +6010,18 @@ VIEWS.riepilogoGiro = function(p){
     if(esG.tot>0) pane.lungo.appendChild(el('<div class="card"><h2>Colpi verso il green</h2>'+
       '<div class="hint">Il pattern di errore di questo giro, su '+esG.tot+' colpi con settore.</div>'+
       grigliaEsitiHtml(esG.conte, esG.tot)+'</div>'));
+    const DR1=statDriving([A]);
+    if(DR1.opp>0) pane.lungo.appendChild(el('<div class="card"><h2>Dal tee, in questo giro</h2>'+
+      '<table class="stat"><tbody>'+
+      '<tr><td>Good drive</td><td class="n"><b>'+DR1.good+' su '+DR1.opp+'</b></td>'+
+        '<td class="n dim" style="font-size:11px">Tour 82,5%</td></tr>'+
+      '<tr><td>Drive nei guai</td><td class="n"><b>'+DR1.trouble+'</b></td><td></td></tr>'+
+      '<tr><td>Residua media, par 4</td><td class="n"><b>'+(DR1.res4.m!==null?Math.round(DR1.res4.m)+' m':'\u2014')+
+        '</b></td><td class="n dim" style="font-size:11px">Tour 134\u2013139 m</td></tr>'+
+      '<tr><td>Residua media, par 5</td><td class="n"><b>'+(DR1.res5.m!==null?Math.round(DR1.res5.m)+' m':'\u2014')+
+        '</b></td><td class="n dim" style="font-size:11px">Tour 240\u2013248 m</td></tr>'+
+      '<tr><td>Colpi di recupero</td><td class="n"><b>'+DR1.rec+'</b></td><td></td></tr>'+
+      '</tbody></table></div>'));
     const BS=statBastoni([g]).filter(b=>b.bastone!=='Putter' && b.usi>0);
     if(BS.length) pane.lungo.appendChild(el('<div class="card"><h2>Bastoni usati</h2>'+
       '<table class="stat"><thead><tr><th>Bastone</th><th class="n">Usi</th><th class="n">Media</th></tr></thead><tbody>'+
@@ -5392,6 +6049,17 @@ VIEWS.riepilogoGiro = function(p){
         'La lettura vera sta nelle statistiche di periodo.</div></div>'));
     } else pane.corto.appendChild(el('<div class="card"><h2>Gioco corto</h2>'+
       '<div class="hint">Nessun tentativo da dentro le 50 yd in questo giro.</div></div>'));
+    const CM1=statChipMultipli([A]);
+    if(CM1.multi>0) pane.corto.appendChild(el('<div class="card"><h2>Chip multipli</h2>'+
+      '<div class="verd" style="font-size:14px">'+CM1.multi+
+      (CM1.multi===1?' buca ha richiesto':' buche hanno richiesto')+' due o piu\u2019 colpi corti</div>'+
+      '<div class="stcap">Riferimento Shot Scope: 0,9 buche a giro per chi gira in 60, 2,1 per chi gira in 80.</div></div>'));
+    const BK1=statBunker([A]);
+    if(BK1.fairway.n>0) pane.corto.appendChild(el('<div class="card"><h2>Bunker di fairway</h2>'+
+      '<div class="verd" style="font-size:14px">'+BK1.fairway.n+' colpi da bunker oltre le 30 yard, su '+
+      BK1.fairway.buche+(BK1.fairway.buche===1?' buca':' buche')+'</div>'+
+      '<div class="legg">costo medio su quelle buche: '+(BK1.fairway.costo!==null?sgn(BK1.fairway.costo,2):'\u2014')+
+      ' sul par \u00b7 riferimento scratch +0,19</div></div>'));
     const SS=statShortSide(A1);
     if(SS.conPin>0 && SS.opp>0){
       pane.corto.appendChild(el('<div class="card"><h2>Short-side</h2>'+
@@ -5421,6 +6089,22 @@ VIEWS.riepilogoGiro = function(p){
         '</tbody></table><div class="stcap">SG totale di fascia, non per putt: su un giro solo i conteggi '+
         'sono fatti, non percentuali. La colonna Tour e’ la probabilita’ di imbucata al centro fascia.</div></div>'));
     }
+    const PA1=statPuttAvanzato([A]);
+    if(PA1.girN>0) pane.putt.appendChild(el('<div class="card"><h2>Le letture che separano</h2>'+
+      '<table class="stat"><tbody>'+
+      '<tr><td>Putt per GIR</td><td class="n"><b>'+(PA1.puttGir!==null?PA1.puttGir.toFixed(2).replace('.',','):'\u2014')+
+        '</b></td><td class="n dim" style="font-size:11px">'+PA1.girN+' buche in regulation</td></tr>'+
+      '<tr><td>Primo putt, in GIR</td><td class="n"><b>'+(PA1.primoGir!==null?PA1.primoGir.toFixed(1).replace('.',',')+' m':'\u2014')+
+        '</b></td><td class="n dim" style="font-size:11px">'+PA1.nPrimoGir+' buche</td></tr>'+
+      '<tr><td>Primo putt, tutte le buche</td><td class="n"><b>'+(PA1.primo!==null?PA1.primo.toFixed(1).replace('.',',')+' m':'\u2014')+
+        '</b></td><td class="n dim" style="font-size:11px">rif. amatoriale ~4,6 m</td></tr>'+
+      '<tr><td>Putt corti mancati entro 5 ft</td><td class="n"><b>'+PA1.cortiMancati+'</b></td>'+
+        '<td class="n dim" style="font-size:11px">su '+PA1.corti+' tentativi</td></tr>'+
+      '<tr><td>Metri di putt imbucati</td><td class="n"><b>'+(PA1.footageGiro!==null?PA1.footageGiro.toFixed(1).replace('.',',')+' m':'\u2014')+
+        '</b></td><td></td></tr>'+
+      '</tbody></table>'+
+      '<div class="stcap">Putt per GIR e\u2019 il putting al netto dell\u2019approccio; il primo putt in GIR e\u2019 '+
+      'l\u2019approccio visto dal green. Su un giro solo sono conteggi, non tendenze.</div></div>'));
     const esP2=statEsitiPutt([g]);
     if(esP2.tot>0) pane.putt.appendChild(el('<div class="card"><h2>Putt non imbucati</h2>'+
       grigliaEsitiHtml(esP2.conte, esP2.tot)+'</div>'));
