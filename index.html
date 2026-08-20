@@ -2201,7 +2201,13 @@ function statNove(A){
   return {meta:meta, conf:conf};
 }
 
-const FASCE_APP=[[0,100,'fino a 100 m'],[100,125,'100–125 m'],[125,150,'125–150 m'],
+/* v11: fasce piu' fini sotto i 100 m, in METRI. La fascia unica "fino a 100 m"
+   mescolava il pitch da 35 m e il wedge pieno da 95: era un difetto segnalato il
+   16/08 e mai corretto. La granularita' e' quella di ShotLink (che usa 25 yard),
+   qui in metri perche' tutte le distanze dell'app sono in metri. Le celle sotto
+   N minimo restano in grigio, come sempre. */
+const FASCE_APP=[[0,50,'fino a 50 m'],[50,75,'50–75 m'],[75,100,'75–100 m'],
+  [100,125,'100–125 m'],[125,150,'125–150 m'],
   [150,175,'150–175 m'],[175,200,'175–200 m'],[200,9999,'oltre 200 m']];
 const FASCE_PUTT=[[0,1,'meno di 1 m'],[1,2,'1–2 m'],[2,3,'2–3 m'],[3,5,'3–5 m'],
   [5,8,'5–8 m'],[8,12,'8–12 m'],[12,999,'oltre 12 m']];
@@ -2988,6 +2994,288 @@ function statArco(a){
     if(!worst || s<worst.s) worst={i:i, s:s};
   }
   return {punti:punti, tot:cum, best:best, worst:worst, W:W};
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   v11 — IL CATALOGO PGA TOUR APPLICATO A UN SINGOLO GIOCATORE
+   ══════════════════════════════════════════════════════════════════════════
+   Le statistiche di pgatour.com/stats che si possono calcolare su un dataset
+   personale, escluse Money e Points. Le fasce sono convertite in METRI.
+   Cosa resta fuori, e perche', e' scritto nel documento
+   03-Metodo-e-riferimenti/20-08-2026-catalogo-pga-tour-applicato.md
+   In breve: tutto cio' che richiede il campo dei concorrenti (Scoring Average
+   Adjusted, Total Driving, Ball Striking, Total Putting, gli SG "vs field"),
+   le coordinate laterali (Distance from Edge/Center of Fairway, Left/Right
+   Tendency), un radar (Club Head Speed, Smash Factor, Spin Rate...) o il taglio
+   del torneo (Consecutive Cuts, Final Round Performance).                     */
+
+/* ── OFF THE TEE: dove finisce quando manca il fairway ─────────────────────
+   Rough Tendency (con lato), Fairway Bunker Tendency, Missed Fairway Percent
+   Other e Driving Accuracy: sul Tour le quattro sommano a 100%.
+   Il lato viene dal campo latoTee, quindi esiste solo dove l'hai segnato: le
+   percentuali di lato sono calcolate sui soli drive con il lato dichiarato.   */
+function statMissFairway(A){
+  let tot=0, fw=0, rough=0, roughSx=0, roughDx=0, roughNd=0, bunker=0, altro=0, pen=0, conLato=0;
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    const c0=b.colpi[0];
+    if(!c0 || c0.lie!=='tee' || b.par<4) return;
+    tot++;
+    if(c0.penalita){ pen++; return; }
+    const c1=b.colpi[1];
+    const l=c1?c1.lie:null;
+    if(l==='fairway' || l==='green'){ fw++; return; }
+    if(l==='rough'){
+      rough++;
+      if(c0.latoTee==='S'){ roughSx++; conLato++; }
+      else if(c0.latoTee==='D'){ roughDx++; conLato++; }
+      else if(c0.latoTee==='C'){ roughNd++; conLato++; }
+      else roughNd++;
+      return;
+    }
+    if(l==='sabbia'){ bunker++; return; }
+    altro++;
+  }));
+  const q=v=>tot? 100*v/tot : null;
+  return {tot:tot, fw:fw, fwPct:q(fw), rough:rough, roughPct:q(rough),
+    roughSx:roughSx, roughDx:roughDx, roughNd:roughNd, conLato:conLato,
+    bunker:bunker, bunkerPct:q(bunker), altro:altro, altroPct:q(altro),
+    pen:pen, penPct:q(pen)};
+}
+
+/* ── OFF THE TEE: % of Yardage covered by Tee Shots ───────────────────────
+   Distanza percorsa dal colpo dal tee diviso la lunghezza della buca, su par 4
+   e par 5, poi separati. Usa percorsaColpo, quindi tiene conto del settore.   */
+function statYardage(A){
+  const tutti=[], p4=[], p5=[];
+  let dMax=null;
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    const c0=b.colpi[0];
+    if(!c0 || c0.lie!=='tee' || b.par<4 || !(b.distanza>0) || c0.penalita) return;
+    const pc=percorsaColpo(b.colpi,0);
+    if(!pc || !(pc.d>0)) return;
+    if(dMax===null || pc.d>dMax) dMax=pc.d;
+    const q=100*pc.d/b.distanza;
+    if(q<=0 || q>130) return;
+    tutti.push(q); (b.par>=5?p5:p4).push(q);
+  }));
+  return {n:tutti.length, tot: tutti.length?media(tutti):null,
+    p4:{n:p4.length, m:p4.length?media(p4):null},
+    p5:{n:p5.length, m:p5.length?media(p5):null}, dMax:dMax};
+}
+
+/* ── APPROACH: GIR per lie di partenza, e sopra/sotto i 91 m ──────────────
+   Il Tour pubblica GIR Percentage from Fairway, from Fairway Bunker e from
+   Other than Fairway. E "Approaches from > 100 yards / inside 100 yards", che
+   misurano la PROSSIMITA', non il GIR: 91,44 m sono 100 yard.               */
+const CENTO_YD_M = 100/M_TO_YD;
+function statApproccioLie(A){
+  const mk=()=>({n:0, green:0, prox:[]});
+  const per={fairway:mk(), rough:mk(), sabbia:mk(), recupero:mk()};
+  const sopra=mk(), sotto=mk();
+  A.forEach(g=>g.bucheCalc.forEach(b=>b.colpi.forEach((c,i)=>{
+    if(c.cat!=='approccio' || c.penalita) return;
+    const nx=b.colpi[i+1];
+    const inGreen = !nx || nx.lie==='green';
+    const prox = !nx ? 0 : (nx.lie==='green' ? nx.distM : null);
+    const add=box=>{ box.n++; if(inGreen){ box.green++; if(prox!==null) box.prox.push(prox); } };
+    if(per[c.lie]) add(per[c.lie]);
+    add(c.distM>=CENTO_YD_M ? sopra : sotto);
+  })));
+  const fin=o=>({n:o.n, greenPct:o.n?100*o.green/o.n:null,
+    prox:o.prox.length?media(o.prox):null, solido:o.n>=N_MIN_FASCIA});
+  return {per:{fairway:fin(per.fairway), rough:fin(per.rough),
+    sabbia:fin(per.sabbia), recupero:fin(per.recupero)},
+    sopra:fin(sopra), sotto:fin(sotto)};
+}
+
+/* ── APPROACH: da che distanza nascono birdie e bogey ─────────────────────
+   Average Approach Distance - Birdie or Better / Par / Bogey or Worse.       */
+function statApproccioEsito(A){
+  const b={n:0,d:[]}, p={n:0,d:[]}, w={n:0,d:[]};
+  A.forEach(g=>g.bucheCalc.forEach(bu=>{
+    const app=bu.colpi.filter(c=>c.cat==='approccio' && !c.penalita && c.distM>0);
+    if(!app.length) return;
+    const ult=app[app.length-1];
+    const box = bu.diff<=-1 ? b : (bu.diff===0 ? p : w);
+    box.n++; box.d.push(ult.distM);
+  }));
+  const fin=o=>({n:o.n, m:o.d.length?media(o.d):null, solido:o.n>=N_MIN_FASCIA});
+  return {birdie:fin(b), par:fin(p), bogey:fin(w)};
+}
+
+/* ── APPROACH: birdie e punteggio per fascia (la famiglia RTP) ────────────
+   Birdie or Better Percentage per fascia e "RTP Score", cioe' il punteggio
+   medio della buca relativo al par condizionato alla fascia di partenza.
+   Stesse fasce della tabella degli approcci, domanda diversa: non quanto e'
+   buono il colpo, ma come finisce la buca.                                   */
+function statRTPFasce(A){
+  const out=FASCE_APP.map(f=>({label:f[2], lo:f[0], hi:f[1], n:0, diff:0, birdie:0, bogey:0}));
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    const app=b.colpi.filter(c=>c.cat==='approccio' && !c.penalita && c.distM>0);
+    if(!app.length) return;
+    const d=app[app.length-1].distM;
+    const f=out.find(x=>d>=x.lo && d<x.hi); if(!f) return;
+    f.n++; f.diff+=b.diff;
+    if(b.diff<=-1) f.birdie++;
+    if(b.diff>=1) f.bogey++;
+  }));
+  return out.filter(x=>x.n>0).map(x=>({label:x.label, n:x.n, rtp:x.diff/x.n,
+    birdiePct:100*x.birdie/x.n, bogeyPct:100*x.bogey/x.n, solido:x.n>=N_MIN_FASCIA}));
+}
+
+/* ── APPROACH: holeouts ──────────────────────────────────────────────────
+   Total Hole Outs e Longest Hole Out. Un holeout e' la palla in buca da un
+   colpo giocato FUORI dal green: approccio, chip, bunker, o il tee di un par 3
+   (hole in one). I putt dal green non contano.                               */
+function statHoleouts(A){
+  const nGiri=A.length; const d=[];
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    const ult=b.colpi[b.colpi.length-1];
+    if(!ult || ult.lie==='green' || !(ult.distM>0)) return;
+    d.push(ult.distM);
+  }));
+  return {n:d.length, perGiro:nGiri?d.length/nGiri:null,
+    media:d.length?media(d):null, max:d.length?Math.max.apply(null,d):null, nGiri:nGiri};
+}
+
+/* ── AROUND THE GREEN: scrambling nella definizione ShotLink ──────────────
+   Scrambling = percentuale delle buche in cui, MANCATO il green in regulation,
+   si fa par o meglio. E' una cosa diversa dall'up and down (palla in buca in due
+   colpi da fuori dal green): un chip perfetto seguito da un bogey e' up and down
+   riuscito e scrambling mancato.
+   Fascia: distanza del primo colpo giocato da fuori dal green DOPO che il green
+   e' stato mancato in regulation, cioe' dal colpo di indice par-2 in avanti.
+   Fasce ShotLink (<10, 10-20, 20-30, >30 yard) convertite in metri.
+   ⚠ Il Tour misura quelle distanze dal CENTRO DEL GREEN, noi dalla bandiera:
+   e' una differenza di qualche metro, sempre nello stesso verso.            */
+const SCR_FASCE=[{lo:0,hi:9,label:'fino a 9 m'},{lo:9,hi:18,label:'9\u201318 m'},
+                 {lo:18,hi:27,label:'18\u201327 m'},{lo:27,hi:9999,label:'oltre 27 m'}];
+function statScramblingTour(A){
+  const fasce=SCR_FASCE.map(f=>({label:f.label, lo:f.lo, hi:f.hi, n:0, ok:0, d:[]}));
+  const perLie={rough:{n:0,ok:0}, sabbia:{n:0,ok:0}, altro:{n:0,ok:0}};
+  let n=0, ok=0; const dist=[], leave=[];
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    if(b.girHit) return;
+    const cs=b.colpi;
+    const iMin=Math.max(1, b.par-2);
+    let idx=-1;
+    for(let i=iMin;i<cs.length;i++){ if(cs[i].lie!=='green' && cs[i].distM>0){ idx=i; break; } }
+    if(idx<0) return;
+    const c=cs[idx], riuscito = b.diff<=0;
+    n++; if(riuscito) ok++;
+    dist.push(c.distM);
+    const nx=cs[idx+1];
+    leave.push(nx? (nx.distM||0) : 0);
+    const f=fasce.find(x=>c.distM>=x.lo && c.distM<x.hi);
+    if(f){ f.n++; if(riuscito) f.ok++; f.d.push(c.distM); }
+    const kl = c.lie==='rough'?'rough' : (c.lie==='sabbia'?'sabbia':'altro');
+    perLie[kl].n++; if(riuscito) perLie[kl].ok++;
+  }));
+  return {n:n, ok:ok, pct:n?100*ok/n:null,
+    dist:dist.length?media(dist):null, leave:leave.length?media(leave):null,
+    fasce:fasce.filter(x=>x.n>0).map(x=>({label:x.label, n:x.n, ok:x.ok,
+      pct:100*x.ok/x.n, dMedia:media(x.d), solido:x.n>=N_MIN_FASCIA})),
+    perLie:perLie};
+}
+
+/* ── PUTTING: i numeri del Tour ───────────────────────────────────────────
+   1/2/3/3+ Putts per Round, Putting Inside 10' (3,05 m), Putts Made Over
+   10'/20' (3,05 e 6,10 m), Average Distance of Putts Made, Longest Putt,
+   Approach Putt Performance (residua dopo il primo putt da oltre 25 ft).     */
+const DIECI_FT_M = 10/M_TO_FT, VENTI_FT_M = 20/M_TO_FT, VENTICINQUE_FT_M = 25/M_TO_FT;
+function statPuttNumeri(A){
+  const nGiri=A.length;
+  const cnt={1:0, 2:0, 3:0, 4:0};
+  let dentro=0, dentroOk=0, madeOver10=0, madeOver20=0;
+  const madeD=[]; let maxMade=null;
+  const lag=[];
+  A.forEach(g=>g.bucheCalc.forEach((b,bi)=>{
+    const compl=((g.buche||[])[bi]||{}).completata!==false;
+    const pt=b.colpi.filter(c=>c.lie==='green');
+    if(pt.length){ const k=Math.min(4, pt.length); cnt[k]++; }
+    pt.forEach((x,i)=>{
+      const ultimo=i===pt.length-1;
+      const imbucato = ultimo && compl && b.colpi[b.colpi.length-1]===x;
+      if(!(x.distM>0)) return;
+      if(x.distM<=DIECI_FT_M){ dentro++; if(imbucato) dentroOk++; }
+      if(imbucato){
+        madeD.push(x.distM);
+        if(maxMade===null || x.distM>maxMade) maxMade=x.distM;
+        if(x.distM>DIECI_FT_M) madeOver10++;
+        if(x.distM>VENTI_FT_M) madeOver20++;
+      }
+      if(i===0 && x.distM>=VENTICINQUE_FT_M && pt.length>=2 && pt[1].distM>=0) lag.push(pt[1].distM);
+    });
+  }));
+  const pg=v=>nGiri? v/nGiri : null;
+  return {nGiri:nGiri,
+    p1:pg(cnt[1]), p2:pg(cnt[2]), p3:pg(cnt[3]), p4:pg(cnt[4]),
+    n1:cnt[1], n2:cnt[2], n3:cnt[3], n4:cnt[4],
+    dentro:dentro, dentroPct: dentro?100*dentroOk/dentro:null,
+    over10:pg(madeOver10), over20:pg(madeOver20),
+    mediaMade: madeD.length?media(madeD):null, maxMade:maxMade,
+    lag: lag.length?media(lag):null, nLag:lag.length};
+}
+
+/* ── SCORING: i numeri del Tour ───────────────────────────────────────────
+   Bogey Average (i soli bogey, non bogey-o-peggio), Total Eagles e Holes per
+   Eagle, Lowest Round, e la distribuzione dei giri per fascia di punteggio —
+   che e' l'equivalente locale onesto di "Rounds in the 60s", una statistica
+   che al di fuori del Tour non vuol dire niente.                            */
+const SCORE_FASCE=[{lo:-99,hi:0,label:'sotto il par'},{lo:0,hi:4,label:'da par a +3'},
+                   {lo:4,hi:8,label:'da +4 a +7'},{lo:8,hi:99,label:'+8 e oltre'}];
+function statScoringNumeri(A){
+  const nGiri=A.length;
+  let bogey=0, doppi=0, eagle=0, buche=0, birdie=0;
+  let best=null;
+  const fasce=SCORE_FASCE.map(f=>({label:f.label, lo:f.lo, hi:f.hi, n:0}));
+  A.forEach(g=>{
+    const d=g.calc.score-g.calc.par;
+    if(best===null || d<best) best=d;
+    const f=fasce.find(x=>d>=x.lo && d<x.hi); if(f) f.n++;
+    g.bucheCalc.forEach(b=>{
+      buche++;
+      if(b.diff===1) bogey++;
+      if(b.diff>=2) doppi++;
+      if(b.diff<=-2) eagle++;
+      if(b.diff<=-1) birdie++;
+    });
+  });
+  return {nGiri:nGiri, buche:buche,
+    bogeyGiro:nGiri?bogey/nGiri:null, doppiGiro:nGiri?doppi/nGiri:null,
+    eagle:eagle, buchePerEagle: eagle? buche/eagle : null,
+    birdieGiro:nGiri?birdie/nGiri:null, best:best,
+    fasce:fasce.filter(x=>x.n>0)};
+}
+
+/* ── STREAKS: le serie ───────────────────────────────────────────────────
+   La categoria Streaks del Tour, meno tutto cio' che dipende dal taglio del
+   torneo. Le serie attraversano il confine fra giri consecutivi, come sul Tour.
+   Valore analitico basso, dichiarato: e' una lettura di costanza, non una
+   diagnosi.                                                                  */
+function serieDa(vals){
+  let best=0, cur=0;
+  vals.forEach(v=>{ if(v){ cur++; if(cur>best) best=cur; } else cur=0; });
+  return {best:best, cur:cur};
+}
+function statSerie(A){
+  const senzaBogey=[], birdie=[], gir=[], fw=[], senzaTre=[], sandOk=[];
+  A.forEach(g=>g.bucheCalc.forEach(b=>{
+    senzaBogey.push(b.diff<=0);
+    birdie.push(b.diff<=-1);
+    gir.push(!!b.girHit);
+    senzaTre.push(b.putt<3);
+    const c0=b.colpi[0];
+    if(c0 && c0.lie==='tee' && b.par>=4){
+      const c1=b.colpi[1];
+      fw.push(!c0.penalita && c1 && (c1.lie==='fairway'||c1.lie==='green'));
+    }
+    if(b.colpi.some(c=>c.lie==='sabbia' && c.distM>0 && c.distM*M_TO_YD<=30)) sandOk.push(b.diff<=0);
+  }));
+  const giriPar=A.map(g=>(g.calc.score-g.calc.par)<=0);
+  return {senzaBogey:serieDa(senzaBogey), birdie:serieDa(birdie), gir:serieDa(gir),
+    fairway:serieDa(fw), senzaTrePutt:serieDa(senzaTre), sand:serieDa(sandOk),
+    giriPar:serieDa(giriPar), nBuche:senzaBogey.length};
 }
 
 function statFairway(A){
@@ -4524,9 +4812,16 @@ VIEWS.statistiche = function(){
      Base, Incroci, Consigli. I pannelli si costruiscono col codice collaudato
      delle versioni precedenti e si RICOLLOCANO per titolo: nessuna logica
      riscritta, solo la casa nuova. */
-  const TABS=[{k:'sintesi',n:'Sintesi'},{k:'lungo',n:'Gioco lungo'},{k:'corto',n:'Gioco corto'},
-              {k:'putt',n:'Putt'},{k:'base',n:'Base'},{k:'incroci',n:'Incroci'},{k:'extra',n:'Consigli'}];
-  const LEGACY_TAB={sg:'lungo', par:'base', club:'lungo'};
+  /* v11: "Gioco lungo" aveva 20 pannelli dopo l'innesto del catalogo Tour, che su
+     un telefono non e' una scheda ma un rotolo. La divisione segue la tassonomia
+     del Tour, che separa Off the Tee da Approach the Green.
+     Per tornare a sette schede: rimettere {k:'lungo',n:'Gioco lungo'} al posto
+     delle due voci 'tee' e 'appr', e nella MAPPA sostituire 'tee' e 'appr' con
+     'lungo'. Nient'altro. */
+  const TABS=[{k:'sintesi',n:'Sintesi'},{k:'tee',n:'Dal tee'},{k:'appr',n:'Approcci'},
+              {k:'corto',n:'Gioco corto'},{k:'putt',n:'Putt'},{k:'base',n:'Base'},
+              {k:'incroci',n:'Incroci'},{k:'extra',n:'Consigli'}];
+  const LEGACY_TAB={sg:'appr', par:'base', club:'tee', lungo:'appr'};
   if(LEGACY_TAB[STAT_F.tab]) STAT_F.tab=LEGACY_TAB[STAT_F.tab];
   if(!STAT_F.tab || !TABS.some(t=>t.k===STAT_F.tab)) STAT_F.tab='sintesi';
   const bar=el('<div class="tabbar sette">'+TABS.map(t=>'<button data-k="'+t.k+'" class="'+(STAT_F.tab===t.k?'on':'')+'">'+t.n+'</button>').join('')+'</div>');
@@ -5398,14 +5693,17 @@ VIEWS.statistiche = function(){
   if(PP.length){
     p2.appendChild(el('<div class="card"><h2>Rendimento per tipo di buca</h2>'+
       '<div class="hint">I par 5 sono occasioni, i par 3 no: separarli dice dove stai lasciando colpi.</div>'+
-      '<table class="stat"><thead><tr><th>Buca</th><th class="n">Giocate</th><th class="n">Sul par</th>'+
-        '<th class="n">Scr.</th><th class="n">Green</th><th class="n">Putt</th></tr></thead><tbody>'+
+      '<table class="stat"><thead><tr><th>Buca</th><th class="n">N</th><th class="n">Sul par</th>'+
+        '<th class="n">Scr.</th><th class="n">Birdie+</th><th class="n">Green</th></tr></thead><tbody>'+
         PP.map(x=>{
           const rs=RIF_SCRATCH.par[x.par];
+          let bp=0, nb=0;
+          A.forEach(g=>g.bucheCalc.forEach(b=>{ if(b.par===x.par){ nb++; if(b.diff<=-1) bp++; } }));
           return '<tr><td>Par '+x.par+'</td><td class="n">'+x.n+'</td>'+
           '<td class="n '+(x.media<=0?'pos':'neg')+'">'+sgn(x.media,2)+'</td>'+
           '<td class="n dim">'+(rs!==undefined?sgn(rs-x.par,1):'\u2014')+'</td>'+
-          '<td class="n">'+Math.round(x.girPct)+'%</td><td class="n">'+x.puttB.toFixed(2)+'</td></tr>';}).join('')+
+          '<td class="n pos">'+(nb?Math.round(100*bp/nb):0)+'%</td>'+
+          '<td class="n">'+Math.round(x.girPct)+'%</td></tr>';}).join('')+
       '</tbody></table><div class="stcap">La colonna <b>Scr.</b> e\u2019 il giocatore scratch secondo Shot Scope: '+
       'par 3 3,2 \u00b7 par 4 4,2 \u00b7 par 5 4,8, qui espressi sul par. Numerosita\u2019 non dichiarata dalla '+
       'fonte.</div></div>'));
@@ -5690,12 +5988,282 @@ VIEWS.statistiche = function(){
     }
   }
 
+  /* ══ v11 — I PANNELLI DEL CATALOGO PGA TOUR ══════════════════════════════ */
+  if(completi.length){
+    const pct1=v=>v===null||v===undefined?'\u2014':v.toFixed(1)+'%';
+    const m1=v=>v===null||v===undefined?'\u2014':v.toFixed(1).replace('.',',')+' m';
+
+    /* ── dove finisce quando manca il fairway ── */
+    {
+      const MF=statMissFairway(completi);
+      if(MF.tot>0){
+        const bar=(nome,v,pct,col)=>'<div class="hbrow wide"><div class="l">'+nome+'</div>'+
+          '<div class="hbtrack"><div class="hbfill" style="width:'+(pct===null?0:Math.min(100,pct))+'%;background:'+col+'"></div></div>'+
+          '<div class="n">'+pct1(pct)+' <span class="dim" style="font-size:10px">('+v+')</span></div></div>';
+        p1.appendChild(el('<div class="card"><h2>Dove finisce il tee shot</h2>'+
+          '<div class="hint">Le quattro voci del Tour che sommano a 100%: fairway centrato, rough, '+
+          'bunker di fairway, e tutto il resto. Su '+MF.tot+' colpi dal tee di par 4 e 5.</div>'+
+          bar('Fairway', MF.fw, MF.fwPct, 'var(--dv-blue)')+
+          bar('Rough', MF.rough, MF.roughPct, 'var(--dv-orange)')+
+          bar('Bunker di fairway', MF.bunker, MF.bunkerPct, 'var(--dv-orange)')+
+          bar('Recupero o altro', MF.altro, MF.altroPct, 'var(--dv-red)')+
+          bar('Penalita\u2019', MF.pen, MF.penPct, 'var(--dv-red)')+
+          (MF.conLato>=8?'<table class="stat" style="margin-top:10px"><thead><tr>'+
+            '<th>Rough, da che lato</th><th class="n">N</th><th class="n">%</th></tr></thead><tbody>'+
+            '<tr><td>A sinistra</td><td class="n">'+MF.roughSx+'</td><td class="n">'+
+              pct1(MF.rough?100*MF.roughSx/MF.rough:null)+'</td></tr>'+
+            '<tr><td>A destra</td><td class="n">'+MF.roughDx+'</td><td class="n">'+
+              pct1(MF.rough?100*MF.roughDx/MF.rough:null)+'</td></tr>'+
+            '<tr><td>Lato non dichiarato</td><td class="n">'+MF.roughNd+'</td><td class="n">'+
+              pct1(MF.rough?100*MF.roughNd/MF.rough:null)+'</td></tr>'+
+            '</tbody></table>':'')+
+          '<div class="stcap">Sono <i>Driving Accuracy</i>, <i>Rough Tendency</i>, <i>Fairway Bunker '+
+          'Tendency</i> e <i>Missed Fairway Percent \u2014 Other</i>: sul Tour le quattro sommano a cento. '+
+          'Il lato del rough viene dal campo che segni sulla scheda del tee, quindi la ripartizione '+
+          'sinistra/destra vale solo sui drive in cui l\u2019hai messo.<br><br>Il Tour ha anche <i>Distance '+
+          'from Edge of Fairway</i> e <i>Left/Right Tendency</i>: richiedono le coordinate laterali del campo '+
+          'e non sono calcolabili qui.</div></div>'));
+      }
+    }
+
+    /* ── quanta buca copre il tee shot ── */
+    {
+      const YD=statYardage(completi);
+      if(YD.n>=5) p1.appendChild(el('<div class="card"><h2>Quanta buca copre il tee shot</h2>'+
+        '<div class="hint">La statistica <i>% of Yardage covered by Tee Shots</i>: quanta parte della buca '+
+        'ti metti alle spalle col primo colpo.</div>'+
+        '<div class="kpigrid">'+
+          '<div class="kpi"><div class="lab">Par 4 e 5</div><div class="v">'+
+            (YD.tot!==null?YD.tot.toFixed(1)+'<span class="u">%</span>':'\u2014')+'</div>'+
+            '<div class="sub">'+YD.n+' buche</div></div>'+
+          '<div class="kpi"><div class="lab">Solo par 4</div><div class="v">'+
+            (YD.p4.m!==null?YD.p4.m.toFixed(1)+'<span class="u">%</span>':'\u2014')+'</div>'+
+            '<div class="sub">'+YD.p4.n+' buche</div></div>'+
+          '<div class="kpi"><div class="lab">Solo par 5</div><div class="v">'+
+            (YD.p5.m!==null?YD.p5.m.toFixed(1)+'<span class="u">%</span>':'\u2014')+'</div>'+
+            '<div class="sub">'+YD.p5.n+' buche</div></div>'+
+          '<div class="kpi"><div class="lab">Drive piu\u2019 lungo</div><div class="v">'+
+            (YD.dMax!==null?Math.round(YD.dMax)+'<span class="u">m</span>':'\u2014')+'</div>'+
+            '<div class="sub">distanza percorsa</div></div>'+
+        '</div>'+
+        '<div class="stcap">Distanza percorsa dal colpo dal tee diviso la lunghezza della buca dal tuo tee. '+
+        'Usa la correzione col settore, quindi non sottostima le palle finite oltre o di lato. I drive con '+
+        'penalita\u2019 sono esclusi. Sul Tour esiste nelle tre varianti totale / par 4 / par 5, ma non pubblica '+
+        'un valore di riferimento utilizzabile qui, perche\u2019 dipende dalla lunghezza dei campi.</div></div>'));
+    }
+
+    /* ── GIR per lie e sopra/sotto i 91 m ── */
+    {
+      const AL=statApproccioLie(completi);
+      const righe=[['fairway','Dal fairway'],['rough','Dal rough'],['sabbia','Dal bunker'],['recupero','Dal recupero']]
+        .filter(r=>AL.per[r[0]].n>0);
+      if(righe.length) p1.appendChild(el('<div class="card"><h2>Approcci: green e prossimita\u2019 per lie</h2>'+
+        '<div class="hint">Le tre statistiche del Tour <i>GIR from Fairway</i>, <i>from Fairway Bunker</i> e '+
+        '<i>from Other than Fairway</i>, piu\u2019 la prossimita\u2019 da ciascun lie.</div>'+
+        '<table class="stat"><thead><tr><th>Da</th><th class="n">Colpi</th><th class="n">Green</th>'+
+          '<th class="n">Lascia</th></tr></thead><tbody>'+
+        righe.map(r=>{ const o=AL.per[r[0]];
+          return '<tr'+(o.solido?'':' style="opacity:.5"')+'><td>'+r[1]+'</td><td class="n">'+o.n+'</td>'+
+            '<td class="n"><b>'+pct1(o.greenPct)+'</b></td><td class="n">'+m1(o.prox)+'</td></tr>';}).join('')+
+        '<tr><td colspan="4" style="padding:3px 0;border-bottom:1px solid var(--bordo)"></td></tr>'+
+        '<tr'+(AL.sopra.solido?'':' style="opacity:.5"')+'><td>Oltre i 91 m <span class="dim" style="font-size:10px">(100 yd)</span></td>'+
+          '<td class="n">'+AL.sopra.n+'</td><td class="n">'+pct1(AL.sopra.greenPct)+'</td>'+
+          '<td class="n"><b>'+m1(AL.sopra.prox)+'</b></td></tr>'+
+        '<tr'+(AL.sotto.solido?'':' style="opacity:.5"')+'><td>Entro i 91 m</td>'+
+          '<td class="n">'+AL.sotto.n+'</td><td class="n">'+pct1(AL.sotto.greenPct)+'</td>'+
+          '<td class="n"><b>'+m1(AL.sotto.prox)+'</b></td></tr>'+
+        '</tbody></table>'+
+        '<div class="stcap">Le due righe in fondo sono <i>Approaches from \u003e 100 yards</i> e <i>inside 100 '+
+        'yards</i>, che sul Tour misurano la <b>prossimita\u2019</b> e non il green preso: 91,44 m sono 100 '+
+        'yard. Questa e\u2019 la lettura per <i>lie di partenza</i>; quella per fascia di distanza sta nella '+
+        'tabella degli approcci.</div></div>'));
+    }
+
+    /* ── da che distanza nascono birdie e bogey ── */
+    {
+      const AE=statApproccioEsito(completi);
+      if(AE.birdie.n+AE.par.n+AE.bogey.n>=10) p1.appendChild(el('<div class="card">'+
+        '<h2>Da che distanza nascono birdie e bogey</h2>'+
+        '<div class="hint">Le tre statistiche <i>Average Approach Distance</i> del Tour, divise per come '+
+        'e\u2019 finita la buca. Non e\u2019 causalita\u2019: e\u2019 la fotografia di dove si vincono e si '+
+        'perdono le buche.</div>'+
+        '<table class="stat"><thead><tr><th>Buca chiusa in</th><th class="n">Buche</th>'+
+          '<th class="n">Distanza media dell\u2019approccio</th></tr></thead><tbody>'+
+        [['Birdie o meglio',AE.birdie],['Par',AE.par],['Bogey o peggio',AE.bogey]].map(r=>
+          '<tr'+(r[1].solido?'':' style="opacity:.5"')+'><td>'+r[0]+'</td><td class="n">'+r[1].n+'</td>'+
+          '<td class="n"><b>'+m1(r[1].m)+'</b></td></tr>').join('')+
+        '</tbody></table>'+
+        '<div class="stcap">Si prende l\u2019<b>ultimo</b> approccio della buca, cioe\u2019 quello da cui hai '+
+        'davvero attaccato il green. Se la distanza dei bogey e\u2019 vicina a quella dei par, il problema non '+
+        'e\u2019 da dove attacchi.</div></div>'));
+    }
+
+    /* ── birdie e punteggio per fascia (RTP) ── */
+    {
+      const RT=statRTPFasce(completi);
+      if(RT.length) p1.appendChild(el('<div class="card"><h2>Come finisce la buca, per fascia d\u2019approccio</h2>'+
+        '<div class="hint">Le stesse fasce della tabella degli approcci, domanda diversa: non quanto e\u2019 '+
+        'buono il colpo, ma <b>come finisce la buca</b>. E\u2019 la famiglia <i>RTP Score</i> e <i>Birdie or '+
+        'Better Percentage</i> del Tour.</div>'+
+        '<table class="stat"><thead><tr><th>Approccio da</th><th class="n">Buche</th>'+
+          '<th class="n">Birdie+</th><th class="n">Bogey+</th><th class="n">Sul par</th></tr></thead><tbody>'+
+        RT.map(x=>'<tr'+(x.solido?'':' style="opacity:.5"')+'><td>'+x.label+'</td><td class="n">'+x.n+'</td>'+
+          '<td class="n pos">'+Math.round(x.birdiePct)+'%</td>'+
+          '<td class="n neg">'+Math.round(x.bogeyPct)+'%</td>'+
+          '<td class="n '+(x.rtp<=0?'pos':'neg')+'"><b>'+sgn(x.rtp,2)+'</b></td></tr>').join('')+
+        '</tbody></table>'+
+        '<div class="stcap">"Sul par" e\u2019 il punteggio medio della buca meno il par, condizionato alla '+
+        'fascia da cui hai giocato l\u2019ultimo approccio: sul Tour si chiama <i>RTP Score</i>. E\u2019 la '+
+        'traduzione in punteggio di quello che lo strokes gained dice in colpi.</div></div>'));
+    }
+
+    /* ── holeouts ── */
+    {
+      const HO=statHoleouts(completi);
+      if(HO.n>0) p1.appendChild(el('<div class="card"><h2>Colpi imbucati da fuori dal green</h2>'+
+        '<div class="verd" style="font-size:14px">'+HO.n+(HO.n===1?' holeout':' holeout')+
+        ' \u00b7 il piu\u2019 lungo da <b>'+Math.round(HO.max)+' m</b></div>'+
+        '<div class="legg">'+(HO.perGiro!==null?HO.perGiro.toFixed(2).replace('.',','):'\u2014')+
+        ' per giro \u00b7 distanza media '+m1(HO.media)+'</div>'+
+        '<div class="stcap">Sono <i>Total Hole Outs</i> e <i>Longest Hole Out</i>. Conta la palla in buca da un '+
+        'colpo giocato fuori dal green \u2014 approccio, chip, bunker, o il tee di un par 3. I putt non '+
+        'contano.</div></div>'));
+    }
+
+    /* ── scrambling nella definizione ShotLink ── */
+    {
+      const ST=statScramblingTour(completi);
+      if(ST.n>0) p1.appendChild(el('<div class="card"><h2>Scrambling: lo standard ShotLink</h2>'+
+        '<div class="hint">Percentuale delle buche in cui, <b>mancato il green in regulation</b>, chiudi in par '+
+        'o meglio. Non e\u2019 l\u2019up and down: un chip perfetto seguito da un bogey e\u2019 up and down '+
+        'riuscito e scrambling mancato.</div>'+
+        '<div class="kpigrid">'+
+          '<div class="kpi"'+(ST.n>=N_MIN_FASCIA?'':' style="opacity:.55"')+'><div class="lab">Scrambling</div>'+
+            '<div class="v">'+(ST.pct!==null?ST.pct.toFixed(0)+'<span class="u">%</span>':'\u2014')+'</div>'+
+            '<div class="sub">'+ST.ok+' su '+ST.n+' green mancati</div></div>'+
+          '<div class="kpi"><div class="lab">Distanza del tentativo</div>'+
+            '<div class="v">'+(ST.dist!==null?ST.dist.toFixed(1).replace('.',',')+'<span class="u">m</span>':'\u2014')+'</div>'+
+            '<div class="sub">media da cui recuperi</div></div>'+
+          '<div class="kpi"><div class="lab">Lascia alla buca</div>'+
+            '<div class="v">'+(ST.leave!==null?ST.leave.toFixed(1).replace('.',',')+'<span class="u">m</span>':'\u2014')+'</div>'+
+            '<div class="sub">Scrambling Avg Distance</div></div>'+
+        '</div>'+
+        '<table class="stat" style="margin-top:10px"><thead><tr><th>Da</th><th class="n">Buche</th>'+
+          '<th class="n">Par o meglio</th></tr></thead><tbody>'+
+        ST.fasce.map(x=>'<tr'+(x.solido?'':' style="opacity:.5"')+'><td>'+x.label+'</td>'+
+          '<td class="n">'+x.n+'</td><td class="n"><b>'+Math.round(x.pct)+'%</b></td></tr>').join('')+
+        '</tbody></table>'+
+        (function(){
+          const L=[['rough','Dal rough'],['sabbia','Dalla sabbia'],['altro','Da altre posizioni']]
+            .filter(l=>ST.perLie[l[0]].n>0);
+          if(!L.length) return '';
+          return '<table class="stat" style="margin-top:8px"><thead><tr><th>Per lie</th><th class="n">Buche</th>'+
+            '<th class="n">Par o meglio</th></tr></thead><tbody>'+
+            L.map(l=>{const o=ST.perLie[l[0]];
+              return '<tr'+(o.n>=N_MIN_FASCIA?'':' style="opacity:.5"')+'><td>'+l[1]+'</td>'+
+                '<td class="n">'+o.n+'</td><td class="n"><b>'+Math.round(100*o.ok/o.n)+'%</b></td></tr>';}).join('')+
+            '</tbody></table>';
+        })()+
+        '<div class="stcap">Fasce ShotLink (\u003c10, 10\u201320, 20\u201330, \u003e30 yard) convertite in metri, e '+
+        'lie del colpo di recupero come fa il Tour con <i>Scrambling from the Rough / Sand / Other</i>. '+
+        'La fascia e\u2019 la distanza del primo colpo giocato da fuori dal green dopo che il green e\u2019 '+
+        'stato mancato in regulation.<br><br><b>Una differenza da dichiarare:</b> il Tour misura quelle distanze '+
+        'dal <i>centro del green</i>, noi dalla bandiera. Lo scarto e\u2019 di qualche metro e sempre nello '+
+        'stesso verso, quindi i confronti nel tempo restano validi.<br><br>Il Tour pubblica anche i sand save per '+
+        'fascia: servirebbero volumi che un giocatore singolo non raggiunge, e non li abbiamo messi.</div></div>'));
+    }
+
+    /* ── putting: i numeri del Tour ── */
+    {
+      const PN=statPuttNumeri(completi);
+      p1.appendChild(el('<div class="card"><h2>Putt: i numeri del Tour</h2>'+
+        '<div class="hint">Le statistiche di conteggio della sezione Putting, per giro.</div>'+
+        '<table class="stat"><thead><tr><th>Per giro</th><th class="n">Buche</th>'+
+          '<th class="n">Totale</th></tr></thead><tbody>'+
+        [['Un putt',PN.p1,PN.n1],['Due putt',PN.p2,PN.n2],['Tre putt',PN.p3,PN.n3],
+         ['Quattro putt o piu\u2019',PN.p4,PN.n4]].map(r=>
+          '<tr><td>'+r[0]+'</td><td class="n"><b>'+(r[1]!==null?r[1].toFixed(2).replace('.',','):'\u2014')+
+          '</b></td><td class="n dim">'+r[2]+'</td></tr>').join('')+
+        '</tbody></table>'+
+        '<table class="stat" style="margin-top:8px"><tbody>'+
+        '<tr><td>Imbucati entro i 3 m <span class="dim" style="font-size:10px">(10 ft)</span></td>'+
+          '<td class="n"><b>'+pct1(PN.dentroPct)+'</b></td><td class="n dim" style="font-size:11px">su '+PN.dentro+' putt</td></tr>'+
+        '<tr><td>Imbucati oltre i 3 m, per giro</td><td class="n"><b>'+
+          (PN.over10!==null?PN.over10.toFixed(2).replace('.',','):'\u2014')+'</b></td><td></td></tr>'+
+        '<tr><td>Imbucati oltre i 6 m, per giro</td><td class="n"><b>'+
+          (PN.over20!==null?PN.over20.toFixed(2).replace('.',','):'\u2014')+'</b></td><td></td></tr>'+
+        '<tr><td>Distanza media dei putt imbucati</td><td class="n"><b>'+m1(PN.mediaMade)+'</b></td><td></td></tr>'+
+        '<tr><td>Putt imbucato piu\u2019 lungo</td><td class="n"><b>'+m1(PN.maxMade)+'</b></td><td></td></tr>'+
+        '<tr><td>Residua dopo il primo putt oltre 7,6 m</td><td class="n"><b>'+m1(PN.lag)+'</b></td>'+
+          '<td class="n dim" style="font-size:11px">'+PN.nLag+' putt</td></tr>'+
+        '</tbody></table>'+
+        '<div class="stcap">Nell\u2019ordine: <i>1/2/3/3+ Putts per Round</i>, <i>Putting Inside 10\u2019</i>, '+
+        '<i>Putts Made Over 10\u2019</i> e <i>Over 20\u2019</i>, <i>Average Distance of Putts Made</i>, '+
+        '<i>Longest Putt</i>, <i>Approach Putt Performance</i> \u2014 quest\u2019ultima e\u2019 la residua dopo '+
+        'il primo putt da oltre 25 piedi, cioe\u2019 la misura del lag. La <i>Putting Average</i> del Tour, che '+
+        'sono i putt per green in regulation, sta nella scheda "Le letture che separano".</div></div>'));
+    }
+
+    /* ── scoring: i numeri del Tour ── */
+    {
+      const SN=statScoringNumeri(completi);
+      p1.appendChild(el('<div class="card"><h2>Scoring: i numeri del Tour</h2>'+
+        '<table class="stat"><tbody>'+
+        '<tr><td>Bogey per giro <span class="dim" style="font-size:10px">(solo bogey)</span></td>'+
+          '<td class="n"><b>'+(SN.bogeyGiro!==null?SN.bogeyGiro.toFixed(2).replace('.',','):'\u2014')+'</b></td></tr>'+
+        '<tr><td>Doppi o peggio per giro</td><td class="n"><b>'+
+          (SN.doppiGiro!==null?SN.doppiGiro.toFixed(2).replace('.',','):'\u2014')+'</b></td></tr>'+
+        '<tr><td>Birdie o meglio per giro</td><td class="n"><b>'+
+          (SN.birdieGiro!==null?SN.birdieGiro.toFixed(2).replace('.',','):'\u2014')+'</b></td></tr>'+
+        '<tr><td>Eagle</td><td class="n"><b>'+SN.eagle+'</b>'+
+          (SN.buchePerEagle?' <span class="dim" style="font-size:10px">(una ogni '+Math.round(SN.buchePerEagle)+' buche)</span>':'')+'</td></tr>'+
+        '<tr><td>Giro migliore</td><td class="n"><b>'+(SN.best!==null?sgn(SN.best,0):'\u2014')+'</b></td></tr>'+
+        '</tbody></table>'+
+        '<table class="stat" style="margin-top:8px"><thead><tr><th>Distribuzione dei giri</th>'+
+          '<th class="n">Giri</th><th class="n">%</th></tr></thead><tbody>'+
+        SN.fasce.map(x=>'<tr><td>'+x.label+'</td><td class="n">'+x.n+'</td>'+
+          '<td class="n">'+Math.round(100*x.n/SN.nGiri)+'%</td></tr>').join('')+
+        '</tbody></table>'+
+        '<div class="stcap"><i>Bogey Average</i> conta i soli bogey, mentre <i>Bogey Avoidance</i> \u2014 nella '+
+        'scheda Base \u2014 conta bogey o peggio: sono due statistiche diverse del Tour e qui ci sono entrambe. '+
+        'La distribuzione dei giri e\u2019 l\u2019equivalente locale di <i>Rounds in the 60s</i>, che fuori dal '+
+        'Tour non vuol dire niente: qui le fasce sono rispetto al par.<br><br><i>Scoring Average (Adjusted)</i> e '+
+        '<i>Sub-Par Rounds</i> richiedono il campo dei concorrenti e non sono calcolabili.</div></div>'));
+    }
+
+    /* ── serie ── */
+    {
+      const SR=statSerie(completi);
+      if(SR.nBuche>=18) p1.appendChild(el('<div class="card"><h2>Serie</h2>'+
+        '<div class="hint">La categoria <i>Streaks</i> del Tour, meno tutto quello che dipende dal taglio del '+
+        'torneo. Le serie attraversano il confine fra giri consecutivi, come sul Tour.</div>'+
+        '<table class="stat"><thead><tr><th>Serie</th><th class="n">Record</th>'+
+          '<th class="n">In corso</th></tr></thead><tbody>'+
+        [['Buche senza bogey',SR.senzaBogey],['Buche senza tre putt',SR.senzaTrePutt],
+         ['Green in regulation',SR.gir],['Fairway centrati',SR.fairway],
+         ['Birdie consecutivi',SR.birdie],['Sand save',SR.sand],
+         ['Giri in par o meglio',SR.giriPar]].map(r=>
+          '<tr><td>'+r[0]+'</td><td class="n"><b>'+r[1].best+'</b></td>'+
+          '<td class="n dim">'+r[1].cur+'</td></tr>').join('')+
+        '</tbody></table>'+
+        '<div class="stcap">Valore analitico basso e dichiarato: e\u2019 una lettura di costanza, non una '+
+        'diagnosi. Le serie del Tour che dipendono dal taglio (<i>Consecutive Cuts</i>) o dagli orari di '+
+        'partenza non hanno senso qui.</div></div>'));
+    }
+  }
+
   /* ---- v10: ricollocazione per titolo nelle sette schede ---- */
   const paneNew={}; TABS.forEach(t=>paneNew[t.k]=el('<div class="pane"></div>'));
   const MAPPA=[
     ['Dove stanno i colpi che perdi','sintesi'],['Cosa allenare','sintesi'],['Sintesi','sintesi'],
     ['Il tuo livello, reparto per reparto','sintesi'],
-    ['Dal tee: good drive','lungo'],['Quanto rende ogni bastone','lungo'],['Gapping','lungo'],
+    ['Dal tee: good drive','tee'],['Quanto rende ogni bastone','appr'],['Gapping','tee'],
+    ['Dove finisce il tee shot','tee'],['Quanta buca copre il tee shot','tee'],
+    ['Approcci: green e prossimita','appr'],['Da che distanza nascono birdie','appr'],
+    ['Come finisce la buca, per fascia','appr'],['Colpi imbucati da fuori dal green','appr'],
+    ['Scrambling: lo standard ShotLink','corto'],
+    ['Putt: i numeri del Tour','putt'],
+    ['Scoring: i numeri del Tour','base'],['Serie','base'],
     ['Bunker: greenside contro fairway','corto'],['Chip multipli','corto'],
     ['Putting: le letture che separano','putt'],
     ['Rendimento per fascia di stroke index','incroci'],
@@ -5703,12 +6271,12 @@ VIEWS.statistiche = function(){
     ['Strokes gained','sintesi'],['Ogni giro rispetto alla tua media','sintesi'],['La tua media','sintesi'],
     ['Andamento nel tempo','sintesi'],['Andamento del punteggio','sintesi'],
     ['Andamento per categoria','extra'],['Andamento di green e putt','extra'],
-    ['Approcci per fascia','lungo'],['Prossimit','lungo'],['Errore di distanza','lungo'],
-    ['Le code','lungo'],['Colpi verso il green','lungo'],['Dove finisce la palla','lungo'],
-    ['Dove finisce il drive','lungo'],['Par 5','lungo'],
-    ['Come si legge questo pannello','lungo'],['Quanto usi ogni bastone','lungo'],
-    ['Distanza percorsa e dispersione','lungo'],['Ellisse di arrivo','lungo'],
-    ['Andamento del driver','lungo'],['Bastoni','lungo'],
+    ['Approcci per fascia','appr'],['Prossimit','appr'],['Errore di distanza','appr'],
+    ['Le code','appr'],['Colpi verso il green','appr'],['Dove finisce la palla','appr'],
+    ['Dove finisce il drive','tee'],['Par 5','appr'],
+    ['Come si legge questo pannello','tee'],['Quanto usi ogni bastone','tee'],
+    ['Distanza percorsa e dispersione','tee'],['Ellisse di arrivo','tee'],
+    ['Andamento del driver','tee'],['Bastoni','tee'],
     ['Gioco corto','corto'],['Difficolt','corto'],['Short-side','corto'],
     ['Putting per distanza','putt'],['Tre-putt','putt'],['Putt non imbucati','putt'],
     ['Punteggio rispetto al par','base'],['Come si chiudono le buche','base'],['Conversioni','base'],
