@@ -35,8 +35,7 @@
     --su-colore:#ffffff;     /* testo su fondo colorato */
     --par3:#4a7ba8; --par5:#a87a4a;
   }
-  @media (prefers-color-scheme: dark){
-    :root{
+  html[data-tema="scuro"]{
       --verde:#1a7a4a; --verde-chiaro:#25a163; --verde-testo:#4ecf92;
       --bg:#0d0d0d; --card:#1a1a19;
       --testo:#ffffff; --grigio:#9c9c94; --bordo:#2c2c2a; --rosso:#ff8a80; --ambra:#e0b53a;
@@ -50,7 +49,6 @@
       --corso-bg:#12251b; --corso-bd:#2a5c43; --su-colore:#0d1a13;
       --par3:#8ab4d8; --par5:#d8b48a;
     }
-  }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0; height:100%; background:var(--bg); color:var(--testo);
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif; overscroll-behavior:none;}
@@ -310,10 +308,8 @@
   .avviso.bloccante{background:#fbeceb; color:var(--rosso); border-color:#f0c8c4;}
   .avviso b{color:inherit;}
   .avviso .ic{flex:none; font-weight:800; font-size:13px; line-height:1.35;}
-  @media (prefers-color-scheme: dark){
-    .avviso{background:#33301c; border-color:#4d472a;}
-    .avviso.bloccante{background:#3a1f1d; border-color:#5a2f2c;}
-  }
+  html[data-tema="scuro"] .avviso{background:#33301c; border-color:#4d472a;}
+  html[data-tema="scuro"] .avviso.bloccante{background:#3a1f1d; border-color:#5a2f2c;}
 
   /* ---- schermata putting ---- */
   .puttbar{display:flex; align-items:center; gap:10px; background:#e2efe8; border-radius:12px;
@@ -324,26 +320,25 @@
   .distchips .chip{padding:11px 2px; font-size:13.5px;}
   .puttflag{font-size:12px; color:var(--verde-testo); font-weight:700; background:#e2efe8;
     border-radius:9px; padding:8px 11px; margin-bottom:10px;}
-  @media (prefers-color-scheme: dark){
-    .puttbar{background:#1e2f26;} .puttflag{background:#1e2f26;} .shot.putt{background:#1e2b23;}
-    .esitocell{background:var(--surf2);} .esitocell.centro{background:var(--wash); color:var(--verde-testo);}
-  }
-  @media (prefers-color-scheme: dark){
-    input[type=text], input[type=date], input[type=number], input[type=password], select, textarea{
+  html[data-tema="scuro"] .puttbar{background:#1e2f26;}
+  html[data-tema="scuro"] .puttflag{background:#1e2f26;}
+  html[data-tema="scuro"] .shot.putt{background:#1e2b23;}
+  html[data-tema="scuro"] .esitocell{background:var(--surf2);}
+  html[data-tema="scuro"] .esitocell.centro{background:var(--wash); color:var(--verde-testo);}
+  html[data-tema="scuro"] input[type=text], html[data-tema="scuro"] input[type=date], html[data-tema="scuro"] input[type=number], html[data-tema="scuro"] input[type=password], html[data-tema="scuro"] select, html[data-tema="scuro"] textarea{
       background:var(--surf2); color:#fff; border-color:#3a3a37;}
-    .chip{background:var(--surf2); color:#fff;}
-    .btn.secondary{background:var(--wash); color:var(--verde-testo);}
-    .btn.danger{background:#3a1f1d; color:#ff8a80;}
-    .toggle2 button{background:#1a1a19; color:var(--verde-testo);}
-    .badge{background:var(--wash); color:var(--verde-testo);}
-    .badge.warn{background:#3a3218; color:#e0b53a;}
-    .badge.bozza{background:#3a1f1d; color:#ff8a80;}
-    .badge.ok{background:#16321f; color:#4ecf92;}
-    .shot{background:var(--surf2);}
-    .installtip{background:var(--surf2);}
-    .syncline{background:var(--surf2);}
-    .metodo code{background:var(--surf2);}
-  }
+  html[data-tema="scuro"] .chip{background:var(--surf2); color:#fff;}
+  html[data-tema="scuro"] .btn.secondary{background:var(--wash); color:var(--verde-testo);}
+  html[data-tema="scuro"] .btn.danger{background:#3a1f1d; color:#ff8a80;}
+  html[data-tema="scuro"] .toggle2 button{background:#1a1a19; color:var(--verde-testo);}
+  html[data-tema="scuro"] .badge{background:var(--wash); color:var(--verde-testo);}
+  html[data-tema="scuro"] .badge.warn{background:#3a3218; color:#e0b53a;}
+  html[data-tema="scuro"] .badge.bozza{background:#3a1f1d; color:#ff8a80;}
+  html[data-tema="scuro"] .badge.ok{background:#16321f; color:#4ecf92;}
+  html[data-tema="scuro"] .shot{background:var(--surf2);}
+  html[data-tema="scuro"] .installtip{background:var(--surf2);}
+  html[data-tema="scuro"] .syncline{background:var(--surf2);}
+  html[data-tema="scuro"] .metodo code{background:var(--surf2);}
 
   /* ── v8: layout generale e restituzione ───────────────────────── */
   main{padding-bottom:86px;}
@@ -384,7 +379,7 @@
   .callout{position:absolute; background:var(--testo); color:var(--card); font-size:11.5px; font-weight:600;
     padding:5px 9px; border-radius:8px; pointer-events:none; transform:translate(-50%,-130%); white-space:nowrap; z-index:5;}
   .chartwrap{position:relative;}
-  @media (prefers-color-scheme: dark){ .card{box-shadow:none;} }
+  html[data-tema="scuro"] .card{box-shadow:none;}
 </style>
 </head>
 <body>
@@ -1459,7 +1454,8 @@ const IMPOSTAZIONI_DEFAULT = {
   esitoAttivo:true,         // griglia a nove settori attiva
   annotatoDefault:true,     // ultimo valore scelto per "carta annotata in campo"
   esitoChiediM:200,         // v9: soglia di RACCOLTA del settore (colpi verso il green)
-  baseCorto:false           // v9: baseline ricostruita del gioco corto sotto le 10 yd
+  baseCorto:false,          // v9: baseline ricostruita del gioco corto sotto le 10 yd
+  tema:'auto'               // v10: auto | chiaro | scuro
 };
 
 function idbOpen(){
@@ -1652,6 +1648,35 @@ function impCacheSync(){
   _ESITO_CHIEDI_M = (typeof v==='number' && v>=ESITO_SOGLIA_M && v<=400) ? v : ESITO_CHIEDI_M_DEFAULT;
   _BASE_CORTO = !!i.baseCorto;
 }
+/* ── v10: il tema ─────────────────────────────────────────────────────────
+   Il handoff consegna due varianti complete e lascia la scelta al committente.
+   Prima l'app seguiva solo `prefers-color-scheme` e la scelta non arrivava a
+   nessuno: le regole scure sono ora agganciate a html[data-tema="scuro"], che
+   questa funzione imposta. In 'auto' segue il sistema, e resta in ascolto: se
+   il telefono passa a chiaro alle 7 del mattino, l'app passa con lui.        */
+let _temaMQ = null;
+function temaApplica(){
+  let t;
+  try { t = IMP().tema; } catch(e) { t = 'auto'; }
+  if(t!=='chiaro' && t!=='scuro'){
+    let scuro=false;
+    try { scuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; } catch(e){}
+    t = scuro ? 'scuro' : 'chiaro';
+  }
+  document.documentElement.setAttribute('data-tema', t);
+  /* dice al sistema come colorare le parti che non sono nostre: barre di
+     scorrimento, campi nativi, e la barra di stato di iOS a schermo intero. */
+  document.documentElement.style.colorScheme = t==='scuro' ? 'dark' : 'light';
+  if(!_temaMQ && window.matchMedia){
+    try {
+      _temaMQ = window.matchMedia('(prefers-color-scheme: dark)');
+      const cambia = ()=>{ if(IMP().tema==='auto') temaApplica(); };
+      if(_temaMQ.addEventListener) _temaMQ.addEventListener('change', cambia);
+      else if(_temaMQ.addListener) _temaMQ.addListener(cambia);
+    } catch(e){}
+  }
+}
+
 function metaSet(patch){ const m={...(LS.get('hcp_meta',{})||{}), ...patch}; LS.set('hcp_meta',m); }
 function giriDaBackup(){
   const m=LS.get('hcp_meta',{})||{};
@@ -4046,6 +4071,17 @@ function grafScorecard(buche){
     '<span class="it"><span class="sw" style="background:var(--verde-testo)"></span>birdie</span>'+
     '<span class="it"><span class="sw" style="background:var(--cella-par)"></span>par</span>'+
     '<span class="it"><span class="sw" style="background:var(--rosso)"></span>bogey o peggio</span></div>';
+}
+
+/* ── v10b: il pannello che dice perche' non c'e' ──────────────────────
+   Un grafico che si nasconde da solo e' indistinguibile da un grafico rotto:
+   chi guarda non sa se manca il dato o manca il codice. La disciplina che
+   l'app applica alle righe delle tabelle (sotto soglia si mostrano in grigio,
+   non si nascondono) vale anche per i pannelli.                            */
+function pannelloAssente(titolo, serve, hai){
+  return '<div class="pnl" style="opacity:.62"><div class="t">'+esc(titolo)+'</div>'+
+    '<div class="nt" style="margin-top:8px">Non ancora disponibile: '+serve+
+    (hai?' <b>Adesso: '+hai+'.</b>':'')+'</div></div>';
 }
 
 /* ── pannello: titolo, verdetto, nota, tabella richiudibile, grafico ─────
@@ -6733,14 +6769,18 @@ VIEWS.statistiche = function(){
           'verde guadagni, rosso perdite. Serve a vedere se un reparto perde <b>sempre</b> o solo in certe giornate.',
         grafico: grafHeat(cats.map(k=>({nome:CAT_NOME[k], vals:completi.map(g=>g.calc.sgCat[k])})),
           fmtDataBreve(completi[0].data), fmtDataBreve(completi[completi.length-1].data))})));
-    }
+    } else p1.appendChild(el(pannelloAssente('Dove si perde, giro per giro',
+      'serve almeno <b>4 giri completi</b> (registrati colpo per colpo) nel periodo filtrato.',
+      completi.length+(completi.length===1?' giro completo':' giri completi'))));
     /* small multiples per reparto */
     if(completi.length>=8){
       const cats=['tee','approccio','corto','putting'];
       p1.appendChild(el(pannello({titolo:'Andamento per reparto',
         nota:'Quattro grafici sulla <b>stessa scala</b>, cosi\u2019 si vede subito quale reparto pesa di piu\u2019.',
         grafico: grafMini(cats.map(k=>({nome:CAT_NOME[k], vals:completi.map(g=>g.calc.sgCat[k])})))})));
-    }
+    } else p1.appendChild(el(pannelloAssente('Andamento per reparto',
+      'servono almeno <b>8 giri completi</b>: con meno, quattro curve sulla stessa scala mostrerebbero rumore.',
+      completi.length+(completi.length===1?' giro completo':' giri completi'))));
     /* ellisse del drive */
     {
       const BS=statBastoni(sel).filter(b=>b.bastone!=='Putter' && b.latDisp!==null && b.disp!==null);
@@ -6752,6 +6792,9 @@ VIEWS.statistiche = function(){
           'RICOSTRUZIONE dichiarata: l\u2019app registra il lato e il settore, non le coordinate. Gli assi sono i due '+
           'scarti tipo misurati, e la componente laterale dei settori diagonali e\u2019 approssimata a 45 gradi. '+
           'L\u2019ellisse grigia e\u2019 un riferimento indicativo, non un dato pubblicato per fascia.')})));
+      else p1.appendChild(el(pannelloAssente('Dispersione del drive',
+        'serve un bastone con abbastanza colpi che abbiano <b>settore di arrivo</b> e <b>distanza</b> segnati. '+
+        'Il settore si chiede durante l\u2019inserimento; senza quello la componente laterale non esiste.')));
     }
     /* dot plot della sacca */
     {
@@ -6763,6 +6806,9 @@ VIEWS.statistiche = function(){
         grafico: grafDot(BS.map(b=>({nome:b.bastone, med:b.distMedia, p10:b.p10, p90:b.p90})), 60, 285),
         chiusura:'La distanza e\u2019 quella <b>percorsa</b>, corretta col settore, non il carry. Per scegliere il '+
           'bastone la colonna che conta e\u2019 il 70\u00b0 percentile, nella tabella qui sotto.'})));
+      else p1.appendChild(el(pannelloAssente('Scala dei bastoni',
+        'servono almeno <b>3 bastoni</b> con una distanza media misurata, putter escluso.',
+        BS.length+(BS.length===1?' bastone':' bastoni'))));
     }
     /* Pareto delle code */
     {
@@ -6772,6 +6818,9 @@ VIEWS.statistiche = function(){
         nota:'Cumulata dei colpi persi, dal colpo peggiore in avanti. Quanto piu\u2019 la curva sale a sinistra, '+
           'tanto piu\u2019 le perdite stanno in pochi colpi.',
         grafico: grafPareto(persi)})));
+      else p1.appendChild(el(pannelloAssente('La curva dei colpi persi',
+        'servono almeno <b>30 colpi in perdita</b> fuori dal green nel periodo filtrato.',
+        persi.length+' colpi')));
     }
     /* bersaglio della prossimita' */
     {
@@ -6780,6 +6829,9 @@ VIEWS.statistiche = function(){
         nota:'Un cerchio per fascia: il raggio e\u2019 la distanza media a cui lasci la palla quando prendi il green.',
         grafico: grafBersaglio(FA.map(x=>({nome:x.label.replace(' m',''), v:x.prox/x.nProx}))),
         chiusura:'I numeri per fascia, con green presi e strokes gained, stanno nella tabella degli approcci.'})));
+      else p1.appendChild(el(pannelloAssente('Prossimita\u2019: dove lasci la palla',
+        'servono almeno <b>3 fasce di approccio</b> con una distanza residua misurata (green preso e distanza del putt segnata).',
+        FA.length+(FA.length===1?' fascia':' fasce'))));
     }
     /* scatter partenza / residuo */
     {
@@ -6797,7 +6849,8 @@ VIEWS.statistiche = function(){
             'tratteggiata e\u2019 la tua prossimita\u2019 normalizzata ('+frl.toFixed(1).replace('.',',')+
             '%): i punti sopra sono i colpi peggiori della tua media, quelli sotto i migliori.',
           grafico: grafScatter(pts, frl)})));
-      }
+      } else p1.appendChild(el(pannelloAssente('Partenza e residuo, colpo per colpo',
+        'servono almeno <b>20 approcci</b> con distanza di partenza e residua.', pts.length+' approcci')));
     }
     /* bullet: tu contro il Tour */
     {
@@ -6821,7 +6874,8 @@ VIEWS.statistiche = function(){
           grafico: grafBullet(righe),
           chiusura:'Il riferimento e\u2019 il giocatore scratch di Shot Scope, tranne i doppi che vengono dal Tour. '+
             'Classe: dato divulgato, numerosita\u2019 non dichiarata dalla fonte.'})));
-      }
+      } else p1.appendChild(el(pannelloAssente('Tu contro il riferimento',
+        'servono le statistiche base del periodo: almeno un giro con buche registrate.')));
     }
     /* calendario mensile */
     {
@@ -6833,6 +6887,9 @@ VIEWS.statistiche = function(){
         nota:'Punteggio medio sul par per mese: il verde e\u2019 tanto piu\u2019 intenso quanto piu\u2019 basso il punteggio.',
         grafico: grafCalendario(chiavi.map(k=>({nome:(MESI_IT[parseInt(k.slice(5,7),10)-1]||k).slice(0,3),
           punteggio:perMese[k].s/perMese[k].n, giri:perMese[k].n})))})));
+      else p1.appendChild(el(pannelloAssente('Stagione, mese per mese',
+        'servono giri in almeno <b>due mesi diversi</b> nel periodo filtrato.',
+        chiavi.length+(chiavi.length===1?' mese':' mesi'))));
     }
     /* curva di realizzazione dei putt sull'area del Tour */
     {
@@ -6851,7 +6908,9 @@ VIEWS.statistiche = function(){
           chiusura:'Le barre bullet della stessa grandezza non sono state aggiunte sotto la tabella '+
             '\u201cPutting per distanza\u201d: sarebbero lo stesso numero due volte, e la regola '+
             '\u201cprofondita\u2019 senza duplicazioni\u201d vale piu\u2019 della lettera del handoff.'})));
-      }
+      } else p1.appendChild(el(pannelloAssente('Realizzazione dei putt',
+        'servono putt in almeno <b>4 fasce di distanza</b> diverse.',
+        voci.length+(voci.length===1?' fascia':' fasce'))));
     }
     /* colonne per buca, sul singolo circolo */
     {
@@ -6868,9 +6927,21 @@ VIEWS.statistiche = function(){
             grafico: grafBuche(vals, pars),
             chiusura:'I valori sono <b>contratti verso la media</b>: ordinare per media grezza selezionerebbe le '+
               'buche piu\u2019 rumorose, non le piu\u2019 difficili.'})));
-        }
-      }
+        } else p1.appendChild(el(pannelloAssente('Buche che costano di piu\u2019, in ordine di gioco',
+          'servono almeno <b>9 buche</b> giocate sul circolo selezionato.', pb.length+' buche')));
+      } else p1.appendChild(el(pannelloAssente('Buche che costano di piu\u2019, in ordine di gioco',
+        'va scelto <b>un solo circolo</b> nel filtro: su campi diversi la buca 7 non e\u2019 la stessa buca.',
+        cS.length+' circoli nel periodo')));
     }
+  } else {
+    /* nessun giro completo: i grafici del handoff vivono tutti sullo strokes
+       gained, che esiste solo per i giri registrati colpo per colpo.        */
+    p1.appendChild(el('<div class="card"><h2>I grafici non compaiono</h2>'+
+      '<div class="hint">I grafici di questa revisione stanno tutti sullo strokes gained, che esiste solo '+
+      'per i giri registrati <b>colpo per colpo</b>. In questo filtro non ce n\u2019e\u2019 nessuno'+
+      (nG?' ('+nG+(nG===1?' giro':' giri')+' in formato vecchio)':'')+'.</div>'+
+      '<div class="stcap">Allarga il periodo, oppure registra il prossimo giro dalla scheda '+
+      '<b>Registra</b>: un solo giro completo accende meta\u2019 dei pannelli.</div></div>'));
   }
 
   /* ══ v11 — I PANNELLI DEL CATALOGO PGA TOUR ══════════════════════════════ */
@@ -7140,6 +7211,7 @@ VIEWS.statistiche = function(){
   /* ---- v10: ricollocazione per titolo nelle sette schede ---- */
   const paneNew={}; TABS.forEach(t=>paneNew[t.k]=el('<div class="pane"></div>'));
   const MAPPA=[
+    ['I grafici non compaiono','sintesi'],
     ['Dove stanno i colpi che perdi','sintesi'],['Cosa allenare','sintesi'],['Sintesi','sintesi'],
     ['Il tuo livello, reparto per reparto','sintesi'],
     ['Dove si perde, giro per giro','sintesi'],['Andamento per reparto','sintesi'],
@@ -8160,6 +8232,34 @@ VIEWS.impostazioni = function(){
   };
   body.appendChild(c1);
 
+  /* ── v10: il tema ──────────────────────────────────────────────────────
+     Il handoff consegna due varianti e lascia la scelta al committente: prima
+     l'app seguiva solo il sistema e la scelta non arrivava a nessuno.      */
+  {
+    const t=IMP().tema||'auto';
+    const cT=el('<div class="card"><h2>Aspetto</h2>'+
+      '<div class="hint">Chiaro si legge meglio col sole in faccia, scuro la sera e consuma meno batteria '+
+      'su uno schermo OLED. <b>Automatico</b> segue l\u2019impostazione del telefono e cambia da solo '+
+      'quando cambia quella.</div>'+
+      '<div class="grid3" id="tem">'+
+        '<div class="chip'+(t==='auto'?' selected':'')+'" data-v="auto">Automatico<br>'+
+          '<span style="font-size:11px;opacity:.75">come il telefono</span></div>'+
+        '<div class="chip'+(t==='chiaro'?' selected':'')+'" data-v="chiaro">Chiaro<br>'+
+          '<span style="font-size:11px;opacity:.75">sempre</span></div>'+
+        '<div class="chip'+(t==='scuro'?' selected':'')+'" data-v="scuro">Scuro<br>'+
+          '<span style="font-size:11px;opacity:.75">sempre</span></div>'+
+      '</div>'+
+      '<div class="stcap">La scelta vive su <b>questo</b> dispositivo: non viaggia con la '+
+      'sincronizzazione, che porta i giri e non le preferenze.</div></div>');
+    cT.querySelector('#tem').onclick=e=>{
+      const c=e.target.closest('.chip'); if(!c) return;
+      IMPset({tema:c.dataset.v});
+      temaApplica();
+      rerenderFermo();
+    };
+    body.appendChild(cT);
+  }
+
   const c2=el('<div class="card"><h2>Compensazione della pendenza</h2>'+
     '<div class="hint">Il telemetro puo’ dare la distanza in linea d’aria oppure quella corretta per il '+
       'dislivello. Sono due dati diversi e mescolarli sposta le distanze per bastone sulle buche in salita '+
@@ -8611,8 +8711,18 @@ VIEWS.sincronizza = function(){
 /* ==========================================================
    AVVIO
    ========================================================== */
+/* Primo colpo di tema senza aspettare lo storage: legge solo il sistema. Se poi
+   le impostazioni dicono altro, `temaApplica` dentro initStore corregge. Serve a
+   non far comparire una schermata bianca su un telefono in modalita' scura.  */
+try{
+  const _scuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.setAttribute('data-tema', _scuro?'scuro':'chiaro');
+  document.documentElement.style.colorScheme = _scuro?'dark':'light';
+}catch(e){ document.documentElement.setAttribute('data-tema','chiaro'); }
+
 initStore().then(()=>{
   bozza = LS.get('hcp_bozza_v3', null);
+  temaApplica();          // v10: prima del primo render, cosi' non c'e' lampo di bianco
   render();
   const m=LS.get('hcp_meta',{})||{};
   if(m.rimossiLegacy && !m.avvisoLegacy){
