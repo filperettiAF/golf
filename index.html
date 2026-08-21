@@ -18,8 +18,22 @@
     --testo:#1c2621; --grigio:#6b7a72; --bordo:#dfe6e2; --rosso:#b3261e; --ambra:#8a6d00;
     --safe-top:env(safe-area-inset-top); --safe-bottom:env(safe-area-inset-bottom);
     --dv-blue:#2a78d6; --dv-orange:#eb6834; --dv-aqua:#1baf7a;
-    --dv-red:#e34948; --dv-neutral:#b8b7ae; --dv-track:#e6e9e7; --dv-good:#0a7d3c;
+    --dv-red:#e34948; --dv-neutral:#7d8b83; --dv-track:#e6e9e7; --dv-good:#0a7d3c;
     --surf2:#eef2f0; --wash:#e9efec;
+    /* v12 — token del handoff di design. Il tema chiaro e' la corrispondenza
+       esatta dichiarata nel README, generata dallo scuro. */
+    --surf-bar:#ffffff;      /* superficie barra e filtro */
+    --surf-alta:#e4eae7;     /* superficie elevata: scheda attiva */
+    --cella-par:#e0e5e2;     /* cella par della scorecard */
+    --sep:#eaeeec;           /* separatore interno */
+    --asse:#c9d2cc;          /* linea asse */
+    --rif:#b9c2bc;           /* riferimento e tacca zero */
+    --tenue:#8b9a91;         /* testo tenue */
+    --eagle:#046b30;
+    --link:#3f6b57;          /* link e toggle */
+    --corso-bg:#eef5f0; --corso-bd:#bcdac8;
+    --su-colore:#ffffff;     /* testo su fondo colorato */
+    --par3:#4a7ba8; --par5:#a87a4a;
   }
   @media (prefers-color-scheme: dark){
     :root{
@@ -27,21 +41,34 @@
       --bg:#0d0d0d; --card:#1a1a19;
       --testo:#ffffff; --grigio:#9c9c94; --bordo:#2c2c2a; --rosso:#ff8a80; --ambra:#e0b53a;
       --dv-blue:#3987e5; --dv-orange:#d95926; --dv-aqua:#199e70;
-      --dv-red:#e66767; --dv-neutral:#4a4a46; --dv-track:#262625; --dv-good:#0ca30c;
-      --surf2:var(--surf2); --wash:#22302a;
+      --dv-red:#e66767; --dv-neutral:#8f8f88; --dv-track:#262625; --dv-good:#0ca30c;
+      /* correzione: --surf2 si autoreferenziava, quindi nel tema scuro restava
+         non definita e i componenti che la usano cadevano sul valore chiaro. */
+      --surf2:#141412; --wash:#22302a;
+      --surf-bar:#141412; --surf-alta:#2a2a27; --cella-par:#33332f; --sep:#23231f;
+      --asse:#3a3a36; --rif:#4a4a46; --tenue:#6b6b66; --eagle:#8ff0bd; --link:#6b8f7f;
+      --corso-bg:#12251b; --corso-bd:#2a5c43; --su-colore:#0d1a13;
+      --par3:#8ab4d8; --par5:#d8b48a;
     }
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0; height:100%; background:var(--bg); color:var(--testo);
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif; overscroll-behavior:none;}
   body{padding-top:var(--safe-top); padding-bottom:var(--safe-bottom); user-select:none;}
-  #app{min-height:100%; display:flex; flex-direction:column;}
-  header.topbar{position:sticky; top:0; z-index:20; background:var(--verde); color:#fff;
-    display:flex; align-items:center; gap:8px; padding:14px 12px; padding-top:calc(14px + var(--safe-top)); margin-top:calc(-1 * var(--safe-top));}
-  header.topbar h1{font-size:17px; margin:0; flex:1; font-weight:600; text-align:center; padding-right:34px;}
-  header.topbar.putting{background:#0a6b3d;}
-  .backbtn{background:none; border:none; color:#fff; font-size:22px; padding:4px 8px; line-height:1;}
-  main{flex:1; padding:14px 14px 40px 14px; max-width:520px; margin:0 auto; width:100%;}
+  /* v12 — intestazione e barra ferme, solo l'area centrale scorre. */
+  html,body{height:100%; overflow:hidden;}
+  #app{height:100%; display:flex; flex-direction:column; overflow:hidden;}
+  header.topbar{flex:0 0 auto; z-index:20; background:var(--card); color:var(--testo);
+    display:flex; align-items:flex-start; gap:8px; border-bottom:1px solid var(--bordo);
+    padding:12px 16px 12px 16px; padding-top:calc(12px + var(--safe-top));}
+  header.topbar h1{font-size:26px; margin:0; flex:1; font-weight:700; letter-spacing:-0.02em;
+    text-align:left; line-height:1.12;}
+  header.topbar .sub{font-size:12px; color:var(--grigio); margin-top:2px;}
+  header.topbar.putting h1{color:var(--verde-testo);}
+  .backbtn{background:none; border:none; color:var(--verde-testo); font-size:30px; padding:0 6px 0 0;
+    line-height:1; align-self:center;}
+  main{flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding:16px 16px 40px 16px; max-width:520px; margin:0 auto; width:100%;}
   .card{background:var(--card); border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.06); border:1px solid var(--bordo);}
   .card h2{font-size:15px; margin:0 0 10px 0; color:var(--verde-testo); text-transform:uppercase; letter-spacing:.03em;}
   .row{display:flex; gap:10px; margin-bottom:10px;}
@@ -115,7 +142,9 @@
   .sseg{height:100%; min-width:0;}
   .sseg + .sseg{margin-left:2px;}
   .hbrow{display:grid; grid-template-columns:76px 1fr 30px; align-items:center; gap:8px; margin-bottom:7px;}
-  .hbrow.wide{grid-template-columns:104px 1fr 36px;}
+  /* la colonna del valore portava "62.1% (87)" in 36 px e sfondava di 6:
+     difetto ereditato dalla ver09, preso dalla prova sugli sfondamenti.     */
+  .hbrow.wide{grid-template-columns:104px 1fr 48px;}
   .hbrow .l{font-size:12px; color:var(--grigio);}
   .hbrow.wide .l{font-size:11.5px; white-space:nowrap;}
   .hbtrack{height:15px; background:var(--dv-track); border-radius:4px; overflow:hidden;}
@@ -128,7 +157,7 @@
   table.stat td.n, table.stat th.n{text-align:right; font-variant-numeric:tabular-nums;}
   table.stat td.dim{color:var(--grigio);}
   .pos{color:var(--dv-good);} .neg{color:var(--dv-red);}
-  .tabbar{position:sticky; top:52px; z-index:15; display:grid; grid-template-columns:repeat(4,1fr);
+  .tabbar{position:sticky; top:0; z-index:15; display:grid; grid-template-columns:repeat(4,1fr);
     gap:4px; background:var(--bg); padding:8px 0 10px 0; margin-bottom:2px;}
   .tabbar button{padding:11px 2px; font-size:11.5px; font-weight:700; border:1.5px solid var(--bordo);
     border-radius:11px; background:var(--card); color:var(--grigio); line-height:1.2;}
@@ -170,6 +199,96 @@
 
   /* ---- griglia a nove settori ---- */
   .esitowrap{margin:10px 0 4px 0;}
+  /* ═══ v12 — componenti del handoff di design ═══════════════════════════ */
+  /* KPI a celle contigue: gap 1px su sfondo bordo, cosi' le divisorie sono il gap */
+  .kpin{display:grid; gap:1px; background:var(--bordo); border:1px solid var(--bordo);
+    border-radius:14px; overflow:hidden; margin-bottom:16px;}
+  .kpin.tre{grid-template-columns:repeat(3,1fr);}
+  .kpin.quattro{grid-template-columns:repeat(4,1fr);}
+  .kpin .c{background:var(--card); padding:12px 8px; text-align:center;}
+  .kpin .lab{font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--grigio); margin-bottom:3px;}
+  .kpin .v{font-size:19px; font-weight:700; letter-spacing:-0.01em; font-variant-numeric:tabular-nums;}
+  .kpin.quattro .v{font-size:17px;}
+  .kpin .sub{font-size:10.5px; color:var(--grigio); margin-top:2px;}
+  /* card hero */
+  .hero{background:var(--card); border:1px solid var(--bordo); border-radius:14px; padding:18px; margin-bottom:10px;}
+  .hero .lab{font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--grigio);}
+  .hero .riga{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-top:8px;}
+  .hero .big{font-size:40px; font-weight:700; line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums;}
+  .hero .sub{font-size:12px; color:var(--grigio); margin-top:6px;}
+  /* striscia filtri */
+  .filtri{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; margin-bottom:10px; padding-bottom:2px;}
+  .filtri::-webkit-scrollbar{display:none;}
+  .filtro{display:flex; align-items:center; gap:5px; padding:7px 11px; border:1px solid var(--bordo);
+    border-radius:9px; background:var(--surf-bar); flex:0 0 auto; font-family:inherit; color:var(--testo);}
+  .filtro .fl{font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--grigio);}
+  .filtro .fv{font-size:12px; font-weight:600;}
+  .filtro .fc{font-size:9px; color:var(--grigio);}
+  /* pannello */
+  .pnl{background:var(--card); border:1px solid var(--bordo); border-radius:14px; padding:18px 16px; margin-bottom:12px;}
+  .pnl > .t{font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--grigio);}
+  .pnl .vd{font-size:15px; font-weight:600; line-height:1.4; letter-spacing:-0.01em; margin-top:10px;}
+  .pnl .nt{font-size:11.5px; color:var(--grigio); line-height:1.5; margin-top:6px;}
+  .pnl .ch{font-size:11px; color:var(--grigio); line-height:1.5; margin-top:12px; padding-top:10px; border-top:1px solid var(--sep);}
+  .tgl{background:none; border:none; font-family:inherit; font-size:12px; font-weight:600;
+    color:var(--link); padding:8px 0 2px 0; cursor:pointer; display:block;}
+  /* scorecard */
+  .scrow{display:flex; gap:3px; margin-bottom:4px;}
+  .sccell{flex:1; min-width:0; padding:6px 0 5px 0; border-radius:7px; text-align:center;}
+  .sccell .b{font-size:8px; opacity:.7; display:block;}
+  .sccell .c{font-size:13px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .sctot{width:36px; flex-shrink:0; padding:6px 0 5px 0; border-radius:7px; text-align:center;
+    background:var(--surf-bar); color:var(--testo); overflow:hidden;}
+  /* senza display:block "out" e il totale finivano sulla stessa riga e la cella
+     sfondava di 13 px: e' il difetto che la prova sugli sfondamenti ora prende. */
+  .sctot .b{font-size:8px; opacity:.7; display:block;}
+  .sctot .c{font-size:13px; font-weight:700; font-variant-numeric:tabular-nums;}
+  /* griglia dei nove settori, in lettura */
+  .setgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:4px;}
+  .setcell{padding:11px 4px; border-radius:9px; text-align:center;}
+  .setcell .p{font-size:13px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .setcell .l{font-size:8.5px; opacity:.75; display:block; margin-top:1px;}
+  /* dot plot dei bastoni */
+  .dotrow{display:grid; grid-template-columns:56px 1fr 52px; align-items:center; gap:8px; margin-bottom:9px;}
+  .dotrow .l{font-size:11px; color:var(--grigio); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .dottrack{position:relative; height:12px;}
+  .dotrow .n{font-size:11.5px; font-weight:700; text-align:right; font-variant-numeric:tabular-nums;}
+  /* heatmap */
+  .heatrow{display:grid; grid-template-columns:80px 1fr; align-items:center; gap:8px; margin-bottom:4px;}
+  .heatrow .l{font-size:10.5px; color:var(--grigio); white-space:nowrap;}
+  .heatcells{display:flex; gap:2px;}
+  /* bullet */
+  .bulrow{margin-bottom:12px;}
+  .bultrack{position:relative; height:8px; background:var(--dv-track); border-radius:4px; margin-top:5px;}
+  /* calendario */
+  .calrow{display:flex; gap:4px;}
+  .calcell{flex:1; padding:9px 4px; border-radius:9px; text-align:center;}
+  .calcell .m{font-size:9px; opacity:.8;}
+  .calcell .v{font-size:13px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .calcell .s{font-size:8.5px; opacity:.8;}
+  /* consigli numerati */
+  .advrow{display:flex; gap:10px; padding:11px 0; border-top:1px solid var(--sep);}
+  .advrow:first-child{border-top:none;}
+  .advrow .num{font-size:11px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--verde-testo); width:14px; flex-shrink:0;}
+  .advrow .tt{font-size:13.5px; font-weight:600;}
+  .advrow .bd{font-size:12px; color:var(--grigio); line-height:1.5; margin-top:3px;}
+  /* barre di copertura */
+  .covrow{padding:11px 0; border-top:1px solid var(--sep);}
+  .covrow:first-child{border-top:none;}
+  .covtrack{height:6px; background:var(--dv-track); border-radius:3px; margin-top:6px; overflow:hidden;}
+  /* colonne per buca */
+  .holecols{display:flex; gap:2px; height:104px; align-items:stretch;}
+  .holecol{flex:1; position:relative;}
+  /* legenda a quadratini */
+  .leg2{display:flex; flex-wrap:wrap; gap:12px; margin-top:8px;}
+  .leg2 .it{display:flex; align-items:center; gap:5px; font-size:10px; color:var(--grigio);}
+  .leg2 .sw{width:9px; height:9px; border-radius:2px; display:inline-block;}
+  /* riga valori sotto un grafico al tocco */
+  .grafrow{display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-top:8px; padding-top:8px; border-top:1px solid var(--sep);}
+  .grafrow .gl{font-size:11.5px; color:var(--grigio);}
+  .grafrow .gv{font-size:14px; font-weight:700; font-variant-numeric:tabular-nums;}
   .esitogrid{display:grid; grid-template-columns:repeat(3,1fr); gap:5px; max-width:250px; margin:0 auto;}
   .esitocell{aspect-ratio:1.35/1; display:flex; flex-direction:column; align-items:center; justify-content:center;
     border-radius:10px; background:#eef2f0; border:1.5px solid transparent; font-size:10.5px;
@@ -228,14 +347,16 @@
 
   /* ── v8: layout generale e restituzione ───────────────────────── */
   main{padding-bottom:86px;}
-  .bottombar{position:fixed; left:0; right:0; bottom:0; z-index:30; display:grid;
-    grid-template-columns:1fr 1.12fr 1fr 1fr; gap:2px; background:var(--card);
-    border-top:1px solid var(--bordo); padding:6px 8px calc(8px + var(--safe-bottom)) 8px;}
-  .bb{text-align:center; font-size:11px; font-weight:700; color:var(--grigio);
-    padding:5px 0 4px; border-radius:11px; border:none; background:transparent; font-family:inherit;}
-  .bb .ic{display:block; font-size:19px; line-height:1.15;}
-  .bb.on{color:var(--verde-testo); background:var(--wash);}
-  .bb.cta{background:var(--verde); color:#fff;}
+  /* v12 — barra inferiore del handoff: quattro voci pari, icone SVG stroke 2px,
+     etichetta 10.5/600, voce attiva in verde e inattive in grigio tenue. */
+  .bottombar{flex:0 0 auto; z-index:30; display:grid; grid-template-columns:repeat(4,1fr);
+    background:var(--surf-bar); border-top:1px solid var(--bordo);
+    padding:9px 4px calc(26px + var(--safe-bottom)) 4px;}
+  .bb{text-align:center; font-size:10.5px; font-weight:600; color:var(--tenue);
+    padding:2px 0; border:none; background:transparent; font-family:inherit; line-height:1.3;}
+  .bb .ic{display:block; margin:0 auto 3px auto; height:17px;}
+  .bb .ic svg{display:block; margin:0 auto;}
+  .bb.on{color:var(--verde-testo);}
   .fchip{display:inline-flex; align-items:center; gap:7px; border:1.5px solid var(--bordo);
     background:var(--card); color:var(--testo); border-radius:22px; padding:9px 13px;
     font-size:12.5px; font-weight:600; margin-bottom:10px; font-family:inherit; max-width:100%;}
@@ -1557,6 +1678,16 @@ function salvaBozza(){ LS.set('hcp_bozza_v3', bozza); }
 function uid(){ return 'g'+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); }
 function fmtData(d){ if(!d) return ''; const p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
 function fmtDataBreve(d){ if(!d) return ''; const p=d.split('-'); return p[2]+'/'+p[1]; }
+const MESI_IT=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto',
+  'settembre','ottobre','novembre','dicembre'];
+/* "12 agosto", come nel handoff: nel sottotitolo l'anno e' rumore. */
+function fmtDataLunga(d){
+  if(!d) return '';
+  const p=d.split('-'); const m=parseInt(p[1],10)-1;
+  return parseInt(p[2],10)+' '+(MESI_IT[m]||p[1]);
+}
+/* Il nome del circolo senza il prefisso, per il titolo della scheda giro. */
+function circoloBreve(n){ return String(n||'').replace(/^Golf\s+Club\s+/i,'').replace(/^Circolo\s+Golf\s+/i,''); }
 /* Le entita' HTML si compongono a runtime da codici carattere.
    Motivo: qualunque anteprima che carichi la pagina in un iframe srcdoc decodifica
    l'HTML prima di eseguire lo script; l'entita' dell'apostrofo diventerebbe un
@@ -3475,6 +3606,464 @@ function statQualita(){
     mesi:mesi, derivaRec:derivaRec, senzaCond:senzaCond, misure:misure,
     riconciliazioni:ric, ricKO:ric.filter(x=>!x.ok), integrKO:integr};
 }
+/* ══════════════════════════════════════════════════════════════════════════
+   v12 — COMPONENTI DEL HANDOFF DI DESIGN
+   ══════════════════════════════════════════════════════════════════════════
+   Riferimento: design_handoff_home_statistiche/README.md, con le geometrie
+   lette dai prototipi. Nessuna dipendenza nuova: stringhe HTML e SVG inline,
+   come tutto il resto dell'app.
+   Convenzione cromatica del handoff, applicata qui senza eccezioni:
+   VERDE E ROSSO SOLO PER IL SEGNO, grigio per i dati neutri (volumi, distanze,
+   conteggi, riferimenti Tour). Il riferimento Tour e' sempre una barretta
+   verticale grigia o un'area grigia di sfondo, mai una seconda serie colorata. */
+
+/* Registro dei grafici interattivi. Il tocco NON fa un re-render completo:
+   aggiorna in posto cursore, raggi dei pallini e riga dei valori. Con oltre
+   cinquanta card a schermo un render intero a ogni tocco si sentirebbe. */
+const GRAF = {};
+/* v10 — apertura ricordata fra i render, come chiede il handoff (`openTables`):
+   chiave = titolo del pannello + indice della tabella dentro la card.        */
+const TBL_APERTE = {};
+let _grafSeq = 0;
+function grafId(){ return 'gr'+(++_grafSeq); }
+
+/* Collega i gestori dopo che il DOM e' stato montato: lo chiama render(). */
+/* v10 — REGOLA SUI DUPLICATI DEL HANDOFF
+   «dove un pannello ha sia tabella sia grafico, la tabella sta sopra, chiusa,
+   dietro il toggle "Mostra tabella"; il grafico sta sotto, sempre visibile.»
+   Passata generica invece di riscrivere ogni card: si applica solo dove la
+   card ha davvero anche un grafico, e solo alle tabelle con almeno quattro
+   righe di corpo. Le tabelle che sono l'unico contenuto restano visibili:
+   nasconderle non toglierebbe un duplicato, toglierebbe il pannello.        */
+function tabelleRichiudibili(radice){
+  const VISIVO='svg, .dvrow, .hbrow, .rngrow, .strack, .bulrow, .calmese, .heatcell';
+  radice.querySelectorAll('.card, .pnl').forEach(card=>{
+    if(!card.querySelector(VISIVO)) return;
+    const tit = card.querySelector('h2, .t');
+    const chiave = (tit? tit.textContent : '?');
+    [...card.querySelectorAll('table')].forEach((t,i)=>{
+      if(t.closest('[data-tblbox]')) return;
+      if(t.querySelectorAll('tr').length < 4) return;
+      const k = chiave+'#'+i, id = 'tw'+(++_tblSeq);
+      const aperta = !!TBL_APERTE[k];
+      const box = document.createElement('div');
+      box.setAttribute('data-tblbox', id);
+      box.setAttribute('data-tblkey', k);
+      box.style.display = aperta ? 'block' : 'none';
+      t.parentNode.insertBefore(box, t);
+      box.appendChild(t);
+      /* la didascalia e la legenda spiegano la tabella: seguono la tabella dentro
+         il box, altrimenti restano in vista un muro di testo su una tabella che
+         non si vede, e il grafico finisce sotto la didascalia di un'altra cosa. */
+      while(box.nextSibling && box.nextSibling.nodeType===1 &&
+            /\b(stcap|legg|legend)\b/.test(box.nextSibling.className||'')){
+        box.appendChild(box.nextSibling);
+      }
+      const b = document.createElement('button');
+      b.className='tgl'; b.setAttribute('data-tgl', id);
+      b.textContent = aperta ? 'Nascondi tabella' : 'Mostra tabella';
+      box.parentNode.insertBefore(b, box);
+    });
+  });
+}
+let _tblSeq = 0;
+
+function grafCollega(radice){
+  radice.querySelectorAll('[data-graf]').forEach(sv=>{
+    const id=sv.getAttribute('data-graf');
+    const G=GRAF[id]; if(!G) return;
+    const agisci=(clientX)=>{
+      const r=sv.getBoundingClientRect();
+      const i=Math.max(0, Math.min(G.n-1, Math.round((clientX-r.left)/r.width*(G.n-1))));
+      G.idx=i;
+      const cur=sv.querySelector('.gcur'); if(cur){ cur.setAttribute('x1',G.x(i)); cur.setAttribute('x2',G.x(i)); }
+      sv.querySelectorAll('.gdot').forEach((d,j)=>{
+        d.setAttribute('r', j===i?4:2.4);
+        if(!G.dotColori) d.setAttribute('fill', j===i?G.colore:'var(--dv-neutral)');
+      });
+      const box=sv.parentNode.querySelector('.grafrow');
+      if(box){
+        box.querySelector('.gl').textContent=G.etichette[i]||('punto '+(i+1));
+        const gv=box.querySelector('.gv');
+        gv.textContent=G.testi[i];
+        gv.style.color = G.neutro ? 'var(--testo)' : (G.valori[i]>=0?'var(--verde-testo)':'var(--rosso)');
+      }
+    };
+    sv.addEventListener('click', e=>agisci(e.clientX));
+    sv.addEventListener('touchstart', e=>{ if(e.touches[0]) agisci(e.touches[0].clientX); }, {passive:true});
+  });
+  /* tabelle richiudibili: chiuse per difetto, toggle testuale */
+  radice.querySelectorAll('[data-tgl]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const box=radice.querySelector('[data-tblbox="'+b.getAttribute('data-tgl')+'"]');
+      if(!box) return;
+      const aperta = box.style.display!=='none';
+      box.style.display = aperta ? 'none' : 'block';
+      b.textContent = aperta ? 'Mostra tabella' : 'Nascondi tabella';
+      const k = box.getAttribute('data-tblkey');
+      if(k) TBL_APERTE[k] = !aperta;
+    });
+  });
+}
+
+/* ── grafico a linea con cursore al tocco ─────────────────────────────────
+   A riposo mostra l'ultimo punto della serie, come chiede il handoff.
+   `dotColori` colora i pallini per esito (verde birdie, grigio par, rosso
+   bogey) senza toccare il colore della linea, che dipende dal segno finale. */
+function grafLinea(valori, o){
+  o=o||{};
+  const n=valori.length; if(!n) return '';
+  const W=o.w||320, H=o.h||96, PT=6;
+  const se=o.se||0;
+  const lo=Math.min.apply(null,valori.concat([0]))-(se?2*se:0);
+  const hi=Math.max.apply(null,valori.concat([0]))+(se?2*se:0);
+  const span=(hi-lo)||1;
+  const x=i=>n<2?W/2:(i/(n-1))*W;
+  const y=v=>PT+(hi-v)/span*(H-PT*2);
+  const idx=n-1;
+  const colore=o.colore||(valori[n-1]>=0?'var(--verde-testo)':'var(--rosso)');
+  const fmt=o.fmt||(v=>sgn(v,1));
+  const id=grafId();
+  const etichette=o.etichette||valori.map((v,i)=>'punto '+(i+1));
+  GRAF[id]={n:n, idx:idx, x:i=>x(i).toFixed(1), colore:colore, etichette:etichette,
+    valori:valori, testi:valori.map(fmt), neutro:!!o.neutro, dotColori:!!o.dotColori};
+  const punti=valori.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ');
+  const banda=se? valori.map((v,i)=>x(i).toFixed(1)+','+y(v+2*se).toFixed(1)).join(' ')+' '+
+    valori.map((v,i)=>x(i).toFixed(1)+','+y(v-2*se).toFixed(1)).reverse().join(' ') : '';
+  return '<svg data-graf="'+id+'" viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+
+    '" style="overflow:visible; display:block; cursor:pointer" role="img" aria-label="'+esc(o.aria||'grafico')+'">'+
+    (banda?'<polygon points="'+banda+'" fill="'+colore+'" opacity="0.10"></polygon>':'')+
+    '<line x1="0" y1="'+y(0).toFixed(1)+'" x2="'+W+'" y2="'+y(0).toFixed(1)+'" stroke="var(--rif)" stroke-width="1"></line>'+
+    '<line class="gcur" x1="'+x(idx).toFixed(1)+'" y1="0" x2="'+x(idx).toFixed(1)+'" y2="'+H+
+      '" stroke="var(--tenue)" stroke-width="1" stroke-dasharray="2 3"></line>'+
+    '<polyline points="'+punti+'" fill="none" stroke="'+colore+'" stroke-width="1.8" stroke-linejoin="round"></polyline>'+
+    valori.map((v,i)=>'<circle class="gdot" cx="'+x(i).toFixed(1)+'" cy="'+y(v).toFixed(1)+'" r="'+(i===idx?4:2.4)+
+      '" fill="'+(o.dotColori? o.dotColori[i] : (i===idx?colore:'var(--dv-neutral)'))+'"></circle>').join('')+
+    '</svg>'+
+    '<div class="grafrow"><div class="gl">'+esc(etichette[idx])+'</div>'+
+    '<div class="gv" style="color:'+(o.neutro?'var(--testo)':(valori[idx]>=0?'var(--verde-testo)':'var(--rosso)'))+'">'+
+    fmt(valori[idx])+'</div></div>';
+}
+
+/* ── curva di realizzazione su area di riferimento ─────────────────
+   Geometria del handoff: 320×110, poligono grigio del Tour a opacita' 0,35,
+   linea propria 1,8px, pallini r=2,4 (selezionato r=4), cursore tratteggiato,
+   etichette delle fasce sotto. Il riferimento e' sempre grigio, mai colorato.
+   Riusa la macchina del cursore di `grafCollega` (.gcur / .gdot / .grafrow).  */
+function grafCurvaRif(voci, o){
+  o=o||{};
+  const n=voci.length; if(!n) return '';
+  const W=320, H=o.h||110, PT=8, PB=16;
+  const hi=100, lo=0;
+  const x=i=>n<2?W/2:8+(i/(n-1))*(W-16);
+  const y=v=>PT+(hi-Math.max(lo,Math.min(hi,v)))/(hi-lo)*(H-PT-PB);
+  const idx=0;
+  const id=grafId();
+  const et=voci.map(v=>v.nome+' — tu / rif. · '+Math.round(v.v)+'% / '+
+    (v.rif===null?'—':Math.round(v.rif)+'%'));
+  GRAF[id]={n:n, idx:idx, x:i=>x(i).toFixed(1), colore:'var(--rosso)', etichette:et,
+    valori:voci.map(v=>v.rif===null?0:v.v-v.rif), testi:voci.map(v=>v.n+' putt'),
+    neutro:true, dotColori:false};
+  const area='8,'+y(0).toFixed(1)+' '+voci.map((v,i)=>x(i).toFixed(1)+','+y(v.rif===null?0:v.rif).toFixed(1)).join(' ')+
+    ' '+(W-8)+','+y(0).toFixed(1);
+  const mia=voci.map((v,i)=>x(i).toFixed(1)+','+y(v.v).toFixed(1)).join(' ');
+  return '<svg data-graf="'+id+'" viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+
+    '" style="overflow:visible; display:block; cursor:pointer" role="img" aria-label="'+esc(o.aria||'curva')+'">'+
+    '<polygon points="'+area+'" fill="var(--tenue)" opacity="0.35"></polygon>'+
+    '<line x1="8" y1="'+y(0).toFixed(1)+'" x2="'+(W-8)+'" y2="'+y(0).toFixed(1)+
+      '" stroke="var(--asse)" stroke-width="1"></line>'+
+    '<line class="gcur" x1="'+x(idx).toFixed(1)+'" y1="0" x2="'+x(idx).toFixed(1)+'" y2="'+(H-PB)+
+      '" stroke="var(--tenue)" stroke-width="1" stroke-dasharray="2 3"></line>'+
+    '<polyline points="'+mia+'" fill="none" stroke="var(--rosso)" stroke-width="1.8" stroke-linejoin="round"></polyline>'+
+    voci.map((v,i)=>'<circle class="gdot" cx="'+x(i).toFixed(1)+'" cy="'+y(v.v).toFixed(1)+'" r="'+
+      (i===idx?4:2.4)+'" fill="'+(i===idx?'var(--rosso)':'var(--dv-neutral)')+'"></circle>').join('')+
+    voci.map((v,i)=>'<text x="'+x(i).toFixed(1)+'" y="'+(H-4)+'" text-anchor="middle" font-size="8" '+
+      'fill="var(--tenue)">'+esc(v.breve||v.nome)+'</text>').join('')+
+    '</svg>'+
+    '<div class="grafrow"><div class="gl">'+esc(et[idx])+'</div>'+
+    '<div class="gv" style="color:var(--testo)">'+voci[idx].n+' putt</div></div>';
+}
+
+/* ── sparkline compatta, senza interazione ────────────────────────────────*/
+function grafSpark(valori, o){
+  o=o||{}; const n=valori.length; if(!n) return '';
+  const W=o.w||120, H=o.h||44, PT=4;
+  const lo=Math.min.apply(null,valori.concat([0])), hi=Math.max.apply(null,valori.concat([0]));
+  const span=(hi-lo)||1;
+  const x=i=>n<2?W/2:(i/(n-1))*W, y=v=>PT+(hi-v)/span*(H-PT*2);
+  const col=valori[n-1]>=0?'var(--verde-testo)':'var(--rosso)';
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" style="flex-shrink:0; overflow:visible">'+
+    '<line x1="0" y1="'+y(0).toFixed(1)+'" x2="'+W+'" y2="'+y(0).toFixed(1)+'" stroke="var(--rif)" stroke-width="1"></line>'+
+    '<polyline points="'+valori.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ')+
+      '" fill="none" stroke="'+col+'" stroke-width="1.6" stroke-linejoin="round"></polyline>'+
+    '<circle cx="'+x(n-1).toFixed(1)+'" cy="'+y(valori[n-1]).toFixed(1)+'" r="2.6" fill="'+col+'"></circle></svg>';
+}
+
+/* ── cascata verticale: come nasce il divario ─────────────────────────────*/
+function grafCascata(voci, scala){
+  scala=scala||12;
+  let run=0; let out='';
+  voci.forEach(v=>{
+    const from=run; run+=v.v;
+    const a=Math.min(from,run), b=Math.max(from,run);
+    const left=50+a/scala*50, w=Math.max(1.2,(b-a)/scala*50);
+    const col=v.v>=0?'var(--verde-testo)':'var(--rosso)';
+    out+='<div style="margin-bottom:13px">'+
+      '<div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px">'+
+      '<span style="font-size:12.5px; letter-spacing:-0.01em">'+esc(v.nome)+'</span>'+
+      '<span style="font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums; color:'+col+'">'+sgn(v.v,2)+'</span></div>'+
+      '<div style="position:relative; height:9px; background:var(--dv-track); border-radius:3px">'+
+      '<div style="position:absolute; left:50%; top:-1px; bottom:-1px; width:1px; background:var(--rif)"></div>'+
+      '<div style="position:absolute; top:0; bottom:0; border-radius:3px; left:'+left.toFixed(2)+'%; width:'+w.toFixed(2)+'%; background:'+col+'"></div>'+
+      '</div></div>';
+  });
+  const tot=run, half=Math.min(50,Math.abs(tot)/scala*50);
+  const colT=tot>=0?'var(--verde-testo)':'var(--rosso)';
+  out+='<div style="padding-top:12px; border-top:1px solid var(--sep)">'+
+    '<div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px">'+
+    '<span style="font-size:12.5px; font-weight:700">Totale</span>'+
+    '<span style="font-size:14px; font-weight:800; font-variant-numeric:tabular-nums; color:'+colT+'">'+sgn(tot,2)+'</span></div>'+
+    '<div style="position:relative; height:9px; background:var(--dv-track); border-radius:3px">'+
+    '<div style="position:absolute; left:50%; top:-1px; bottom:-1px; width:1px; background:var(--rif)"></div>'+
+    '<div style="position:absolute; top:0; bottom:0; border-radius:3px; left:'+(tot>=0?50:50-half).toFixed(2)+'%; width:'+half.toFixed(2)+'%; background:'+colT+'"></div>'+
+    '</div></div>'+
+    '<div style="display:flex; justify-content:space-between; font-size:9.5px; color:var(--tenue); margin-top:6px">'+
+    '<span>\u2212'+scala+'</span><span>0</span><span>+'+scala+'</span></div>';
+  return out;
+}
+
+/* ── heatmap reparti x giri ───────────────────────────────────────────────*/
+function grafHeat(righe, primo, ultimo){
+  let max=0;
+  righe.forEach(r=>r.vals.forEach(v=>{ if(Math.abs(v)>max) max=Math.abs(v); }));
+  max=max||1;
+  return righe.map(r=>'<div class="heatrow"><div class="l">'+esc(r.nome)+'</div><div class="heatcells">'+
+    r.vals.map(v=>{
+      const k=Math.min(1,Math.abs(v)/max);
+      const rgb = v>=0 ? '78,207,146' : '230,103,103';
+      return '<div style="flex:1; height:16px; border-radius:3px; background:rgba('+rgb+','+(0.10+0.72*k).toFixed(2)+')"></div>';
+    }).join('')+'</div></div>').join('')+
+    '<div style="display:flex; justify-content:space-between; font-size:9.5px; color:var(--tenue); margin-top:4px; padding-left:88px">'+
+    '<span>'+esc(primo||'primo giro')+'</span><span>'+esc(ultimo||'ultimo giro')+'</span></div>';
+}
+
+/* ── quattro grafici piccoli, stessa scala ────────────────────────────────*/
+function grafMini(serie, o){
+  o=o||{};
+  let lo=0, hi=0;
+  serie.forEach(s=>s.vals.forEach(v=>{ if(v<lo)lo=v; if(v>hi)hi=v; }));
+  const span=(hi-lo)||1;
+  return '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px">'+serie.map(s=>{
+    const n=s.vals.length, W=130, H=40, PT=4;
+    const x=i=>n<2?W/2:(i/(n-1))*W, y=v=>PT+(hi-v)/span*(H-PT*2);
+    const ult=s.vals[n-1];
+    return '<div style="border:1px solid var(--bordo); border-radius:10px; padding:8px">'+
+      '<div style="display:flex; justify-content:space-between; align-items:baseline">'+
+      '<span style="font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--grigio)">'+esc(s.nome)+'</span>'+
+      '<span style="font-size:11px; font-weight:700; font-variant-numeric:tabular-nums; color:'+(ult>=0?'var(--verde-testo)':'var(--rosso)')+'">'+sgn(ult,1)+'</span></div>'+
+      '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" style="overflow:visible; display:block; margin-top:4px">'+
+      '<line x1="0" y1="'+y(0).toFixed(1)+'" x2="'+W+'" y2="'+y(0).toFixed(1)+'" stroke="var(--rif)" stroke-width="1"></line>'+
+      '<polyline points="'+s.vals.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ')+
+      '" fill="none" stroke="'+(ult>=0?'var(--verde-testo)':'var(--rosso)')+'" stroke-width="1.4" stroke-linejoin="round"></polyline>'+
+      '</svg></div>';
+  }).join('')+'</div>';
+}
+
+/* ── ellisse di dispersione del drive ─────────────────────────────────────
+   RICOSTRUZIONE dichiarata: l'app registra lato e settore, non coordinate.
+   Gli assi sono lo scarto tipo longitudinale e laterale misurati.           */
+function grafEllisse(sdLungo, sdLato, rifLungo, rifLato, nota){
+  const sx=v=>Math.max(6, Math.min(130, v*3.2));
+  const sy=v=>Math.max(4, Math.min(70, v*3.2));
+  const rx=sx(sdLato), ry=sy(sdLungo);
+  return '<svg viewBox="0 0 300 180" width="100%" height="180" style="display:block; overflow:visible" role="img" aria-label="dispersione del drive">'+
+    '<line x1="150" y1="6" x2="150" y2="174" stroke="var(--asse)" stroke-width="1"></line>'+
+    '<line x1="14" y1="150" x2="286" y2="150" stroke="var(--asse)" stroke-width="1"></line>'+
+    '<ellipse cx="150" cy="150" rx="'+sx(rifLato).toFixed(1)+'" ry="'+sy(rifLungo).toFixed(1)+
+      '" fill="var(--rif)" opacity="0.3" stroke="var(--tenue)" stroke-width="1" stroke-dasharray="3 3"></ellipse>'+
+    '<ellipse cx="150" cy="150" rx="'+rx.toFixed(1)+'" ry="'+ry.toFixed(1)+
+      '" fill="var(--dv-red)" opacity="0.16" stroke="var(--dv-red)" stroke-width="1.4"></ellipse>'+
+    '<ellipse cx="150" cy="150" rx="'+Math.min(140,rx*1.12).toFixed(1)+'" ry="'+Math.min(76,ry*1.19).toFixed(1)+
+      '" fill="none" stroke="var(--dv-red)" stroke-width="1" stroke-dasharray="2 4"></ellipse>'+
+    '<circle cx="150" cy="150" r="3" fill="var(--testo)"></circle></svg>'+
+    '<div class="leg2"><span class="it"><span class="sw" style="background:var(--dv-red)"></span>la tua dispersione</span>'+
+    '<span class="it"><span class="sw" style="background:var(--rif)"></span>riferimento</span></div>'+
+    '<div class="nt">'+esc(nota||'')+'</div>';
+}
+
+/* ── dot plot: scala dei bastoni, ordine di sacca ─────────────────────────*/
+function grafDot(righe, min, max){
+  const pos=v=>((v-min)/((max-min)||1)*100);
+  return righe.map(r=>'<div class="dotrow"><div class="l">'+esc(r.nome)+'</div>'+
+    '<div class="dottrack">'+
+    (r.p10!==null && r.p90!==null?'<div style="position:absolute; top:4.5px; height:3px; border-radius:2px; background:var(--dv-track); left:'+
+      pos(r.p10).toFixed(1)+'%; width:'+Math.max(1,(pos(r.p90)-pos(r.p10))).toFixed(1)+'%"></div>':'')+
+    '<div style="position:absolute; top:2px; width:8px; height:8px; border-radius:50%; background:var(--dv-neutral); left:'+
+      pos(r.med).toFixed(1)+'%; margin-left:-4px"></div></div>'+
+    '<div class="n">'+Math.round(r.med)+' m</div></div>').join('')+
+    '<div style="display:flex; justify-content:space-between; font-size:9.5px; color:var(--tenue); margin-top:2px">'+
+    '<span>'+min+' m</span><span>'+max+' m</span></div>';
+}
+
+/* ── curva di Pareto dei colpi persi ─────────────────────────────────────*/
+function grafPareto(persi){
+  const d=persi.slice().sort((a,b)=>a-b).map(Math.abs);
+  const tot=d.reduce((a,b)=>a+b,0)||1;
+  const W=320,H=100,PT=6;
+  let cum=0; const pts=[];
+  d.forEach((v,i)=>{ cum+=v; pts.push([(i+1)/d.length*W, PT+(1-cum/tot)*(H-PT*2)]); });
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" style="display:block; overflow:visible" role="img" aria-label="curva di Pareto dei colpi persi">'+
+    '<line x1="0" y1="'+(H-PT)+'" x2="'+W+'" y2="'+(H-PT)+'" stroke="var(--asse)" stroke-width="1"></line>'+
+    '<polyline points="'+pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')+
+    '" fill="none" stroke="var(--rosso)" stroke-width="1.8" stroke-linejoin="round"></polyline></svg>'+
+    '<div style="display:flex; justify-content:space-between; font-size:9.5px; color:var(--tenue); margin-top:4px">'+
+    '<span>il colpo peggiore</span><span>cumulata dei colpi persi</span><span>tutti</span></div>';
+}
+
+/* ── bersaglio a cerchi concentrici ──────────────────────────────────────*/
+function grafBersaglio(fasce){
+  if(!fasce.length) return '';
+  const max=Math.max.apply(null,fasce.map(f=>f.v))||1;
+  return '<div style="display:flex; justify-content:center">'+
+    '<svg viewBox="0 0 200 176" width="100%" height="176" style="display:block; max-width:280px" role="img" aria-label="prossimita per fascia">'+
+    fasce.map((f,i)=>{
+      const r=10+f.v/max*72;
+      return '<circle cx="100" cy="88" r="'+r.toFixed(1)+'" fill="none" stroke="'+
+        (i===0?'var(--verde-testo)':(i===fasce.length-1?'var(--rosso)':'var(--dv-neutral)'))+
+        '" stroke-width="1.4" stroke-dasharray="'+(i===0?'none':'3 3')+'"></circle>';
+    }).join('')+
+    fasce.map(f=>{
+      const r=10+f.v/max*72;
+      return '<text x="100" y="'+(88-r-3).toFixed(1)+'" text-anchor="middle" font-size="8" fill="var(--grigio)">'+esc(f.nome)+'</text>';
+    }).join('')+
+    '<circle cx="100" cy="88" r="3" fill="var(--testo)"></circle></svg></div>';
+}
+
+/* ── scatter partenza / residuo, con la retta della prossimita' normalizzata */
+function grafScatter(punti, frl){
+  const xMax=200, yMax=20;
+  return '<svg viewBox="0 0 300 150" width="100%" height="150" style="display:block; overflow:visible" role="img" aria-label="partenza e residuo">'+
+    '<line x1="0" y1="140" x2="300" y2="140" stroke="var(--asse)" stroke-width="1"></line>'+
+    '<line x1="0" y1="0" x2="0" y2="140" stroke="var(--asse)" stroke-width="1"></line>'+
+    '<line x1="0" y1="140" x2="300" y2="'+(140-(xMax*frl/100)/yMax*140).toFixed(1)+
+      '" stroke="var(--tenue)" stroke-width="1" stroke-dasharray="3 3"></line>'+
+    punti.map(p=>'<circle cx="'+Math.min(300,p.x/xMax*300).toFixed(1)+'" cy="'+
+      Math.max(0,140-Math.min(yMax,p.y)/yMax*140).toFixed(1)+'" r="3.2" fill="'+
+      ((p.x>0 && p.y/p.x<=frl/100)?'var(--verde-testo)':'var(--rosso)')+'" opacity="0.75"></circle>').join('')+
+    '</svg><div style="display:flex; justify-content:space-between; font-size:9.5px; color:var(--tenue); margin-top:4px">'+
+    '<span>0 m</span><span>distanza di partenza</span><span>'+xMax+' m</span></div>';
+}
+
+/* ── barre bullet: la tua barra, il Tour come barretta grigia ─────────────*/
+function grafBullet(righe){
+  return righe.map(r=>{
+    const buono = r.suMeglio ? (r.mio>=r.rif) : (r.mio<=r.rif);
+    const col = buono?'var(--verde-testo)':'var(--rosso)';
+    return '<div class="bulrow"><div style="display:flex; justify-content:space-between; align-items:baseline">'+
+      '<span style="font-size:12px">'+esc(r.nome)+'</span>'+
+      '<span style="font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; color:'+col+'">'+
+      r.testoMio+' <span style="color:var(--grigio); font-weight:400">\u00b7 Tour '+r.testoRif+'</span></span></div>'+
+      '<div class="bultrack">'+
+      '<div style="position:absolute; top:0; bottom:0; left:0; width:'+Math.min(100,100*r.mio/r.max).toFixed(1)+'%; border-radius:4px; background:'+col+'"></div>'+
+      '<div style="position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--grigio); left:'+Math.min(100,100*r.rif/r.max).toFixed(1)+'%"></div>'+
+      '</div></div>';
+  }).join('')+'<div class="leg2"><span class="it">la barretta verticale e\u2019 il riferimento Tour</span></div>';
+}
+
+/* ── colonne per le 18 buche ─────────────────────────────────────────────*/
+function grafBuche(vals, pars){
+  const max=Math.max.apply(null,vals.map(Math.abs).concat([0.5]));
+  return '<div class="holecols">'+vals.map((v,i)=>{
+    const h=Math.abs(v)/max*44;
+    const par=pars[i]||4;
+    return '<div class="holecol">'+
+      '<div style="position:absolute; '+(v>=0?'bottom:50%':'top:50%')+'; left:15%; width:70%; height:'+h.toFixed(1)+
+      'px; border-radius:2px; background:'+(v>=0?'var(--rosso)':'var(--verde-testo)')+'"></div>'+
+      '<div style="position:absolute; bottom:-2px; left:0; right:0; text-align:center; font-size:8px; font-variant-numeric:tabular-nums; color:'+
+      (par===3?'var(--par3)':(par===5?'var(--par5)':'var(--tenue)'))+'">'+(i+1)+'</div></div>';
+  }).join('')+'</div>'+
+  '<div class="leg2"><span class="it"><span class="sw" style="background:var(--par3)"></span>par 3</span>'+
+  '<span class="it"><span class="sw" style="background:var(--tenue)"></span>par 4</span>'+
+  '<span class="it"><span class="sw" style="background:var(--par5)"></span>par 5</span></div>';
+}
+
+/* ── calendario: un riquadro per mese ────────────────────────────────────*/
+function grafCalendario(mesi){
+  const vals=mesi.map(m=>m.punteggio);
+  const min=Math.min.apply(null,vals), max=Math.max.apply(null,vals), span=(max-min)||1;
+  return '<div class="calrow">'+mesi.map(m=>{
+    const k=1-(m.punteggio-min)/span;
+    return '<div class="calcell" style="background:rgba(78,207,146,'+(0.08+0.44*k).toFixed(2)+'); color:'+
+      (k>0.6?'var(--su-colore)':'var(--testo)')+'">'+
+      '<div class="m">'+esc(m.nome)+'</div><div class="v">'+m.punteggio.toFixed(1).replace('.',',')+'</div>'+
+      '<div class="s">'+m.giri+(m.giri===1?' giro':' giri')+'</div></div>';
+  }).join('')+'</div>';
+}
+
+/* ── barre di copertura ─────────────────────────────────────────────────*/
+function grafCopertura(righe){
+  return righe.map(r=>{
+    const col = r.pct>=80?'var(--verde-testo)':(r.pct>=60?'var(--dv-neutral)':'var(--rosso)');
+    return '<div class="covrow"><div style="display:flex; justify-content:space-between; align-items:baseline">'+
+      '<span style="font-size:12.5px">'+esc(r.nome)+'</span>'+
+      '<span style="font-size:12px; font-weight:700; font-variant-numeric:tabular-nums">'+Math.round(r.pct)+'%</span></div>'+
+      (r.nota?'<div style="font-size:11px; color:var(--grigio); margin-top:2px">'+esc(r.nota)+'</div>':'')+
+      '<div class="covtrack"><div style="height:100%; width:'+Math.min(100,r.pct).toFixed(0)+'%; border-radius:3px; background:'+col+'"></div></div>'+
+      '</div>';
+  }).join('');
+}
+
+/* ── griglia dei nove settori in lettura ────────────────────────────────
+   Scala fissa dichiarata: casella piena = 40% dei colpi.                  */
+function grafSettori(conte, tot){
+  if(!tot) return '';
+  return '<div class="setgrid">'+ESITI.map(e=>{
+    const v=100*(conte[e.k]||0)/tot;
+    const k=Math.min(1,v/40);
+    const scuro = k>0.5;
+    return '<div class="setcell" style="background:rgba(78,207,146,'+(0.06+0.5*k).toFixed(2)+'); color:'+
+      (scuro?'var(--su-colore)':'var(--testo)')+'">'+
+      '<div class="p">'+v.toFixed(0)+'%</div><span class="l">'+e.n.replace('<br>',' ')+'</span></div>';
+  }).join('')+'</div>'+
+  '<div style="font-size:9.5px; color:var(--tenue); margin-top:6px">Scala fissa: casella piena = 40% dei colpi, '+
+  'cosi\u2019 due periodi si confrontano a colpo d\u2019occhio.</div>';
+}
+
+/* ── scorecard a due file da nove ───────────────────────────────────────*/
+function grafScorecard(buche){
+  const col=d=>d<=-2?'var(--eagle)':(d===-1?'var(--verde-testo)':(d===0?'var(--cella-par)':'var(--rosso)'));
+  const fila=arr=>{
+    if(!arr.length) return '';
+    return '<div class="scrow">'+arr.map(h=>
+      '<div class="sccell" style="background:'+col(h.diff)+'; color:'+(h.diff===0?'var(--testo)':'var(--su-colore)')+'">'+
+      '<span class="b">'+h.buca+'</span><span class="c">'+h.score+'</span></div>').join('')+
+      '<div class="sctot"><span class="b">'+(arr[0].buca===1?'out':'in')+'</span>'+
+      '<span class="c">'+arr.reduce((s,h)=>s+h.score,0)+'</span></div></div>';
+  };
+  return fila(buche.slice(0,9))+fila(buche.slice(9,18))+
+    '<div class="leg2">'+
+    '<span class="it"><span class="sw" style="background:var(--eagle)"></span>eagle</span>'+
+    '<span class="it"><span class="sw" style="background:var(--verde-testo)"></span>birdie</span>'+
+    '<span class="it"><span class="sw" style="background:var(--cella-par)"></span>par</span>'+
+    '<span class="it"><span class="sw" style="background:var(--rosso)"></span>bogey o peggio</span></div>';
+}
+
+/* ── pannello: titolo, verdetto, nota, tabella richiudibile, grafico ─────
+   Regola del handoff: dove c'e' sia tabella sia grafico, la tabella sta
+   sopra CHIUSA dietro il toggle, il grafico sotto sempre visibile.         */
+let _pnlSeq=0;
+function pannello(o){
+  const id='tb'+(++_pnlSeq);
+  let h='<div class="pnl"><div class="t">'+esc(o.titolo)+'</div>';
+  if(o.verdetto) h+='<div class="vd">'+o.verdetto+'</div>';
+  if(o.nota) h+='<div class="nt">'+o.nota+'</div>';
+  if(o.tabella) h+='<button class="tgl" data-tgl="'+id+'">Mostra tabella</button>'+
+    '<div data-tblbox="'+id+'" style="display:none">'+o.tabella+'</div>';
+  if(o.grafico) h+='<div style="margin-top:14px">'+o.grafico+'</div>';
+  if(o.chiusura) h+='<div class="ch">'+o.chiusura+'</div>';
+  return h+'</div>';
+}
+
 /* ==========================================================
    GRAFICI A LINEA (SVG inline, nessuna libreria)
    ========================================================== */
@@ -4048,18 +4637,26 @@ function render(){
   const r=VIEWS[top.view](top.params||{});
   const cls = r.putting ? 'topbar putting' : 'topbar';
   app.appendChild(el('<header class="'+cls+'">'+
-    (nav.length>1?'<button class="backbtn" onclick="back()">‹</button>':'<span style="width:30px;display:inline-block;"></span>')+
-    '<h1>'+esc(r.header)+'</h1></header>'));
+    (nav.length>1?'<button class="backbtn" onclick="back()">\u2039</button>':'')+
+    '<div style="flex:1; min-width:0"><h1>'+esc(r.header)+'</h1>'+
+    (r.sub?'<div class="sub">'+esc(r.sub)+'</div>':'')+'</div></header>'));
   const m=document.createElement('main'); m.appendChild(r.body); app.appendChild(m);
+  tabelleRichiudibili(m);   // v10: regola sui duplicati (tabella chiusa, grafico visibile)
+  grafCollega(m);   // v12: cursori dei grafici e tabelle richiudibili
   // la barra inferiore compare solo sulle quattro destinazioni radice: dentro
   // un flusso (inserimento, riepilogo, correzione) lo schermo resta pulito.
   if(nav.length===1 && (top.view==='home'||top.view==='statistiche'||top.view==='altro')){
     app.appendChild(barraInferiore(top.view));
   }
-  window.scrollTo(0,0);
+  if(_scrollDa!==null){ m.scrollTop=_scrollDa; _scrollDa=null; } else m.scrollTop=0;
 }
+let _scrollDa=null;
 
-/* ---------------- HOME ---------------- */
+/* ---------------- HOME (Giri) ----------------
+   v12 — ricostruita sul handoff di design. Gerarchia: riprendi (se c'e'),
+   nuovo giro, lista, stato sincronizzazione. Ogni riga della lista e' un
+   bottone a piena larghezza con SG e punteggio a destra, e lo scarto dal par
+   che scrive "in par" invece di uno zero nudo.                              */
 VIEWS.home = function(){
   const giri=LS.get('hcp_giri',[]);
   const body=el('<div></div>');
@@ -4067,51 +4664,81 @@ VIEWS.home = function(){
     body.appendChild(el('<div class="installtip">Consiglio: apri questa pagina in Safari, tocca Condividi '+
       'e scegli <b>"Aggiungi alla schermata Home"</b>. Da li’ parte come un’app a schermo intero e funziona anche senza connessione.</div>'));
   }
-  // L1: una sola azione primaria in cima, che cambia con lo stato.
+
+  /* 1. card del giro in corso */
   const inCorso = bozza && bozza.stato==='in_corso';
-  const b1=el('<button class="btn big">'+(inCorso
-    ? '\u25b6 Riprendi il giro \u2014 '+esc(bozza.circolo)+', buca '+(bozza.bucaCorrente+1)
-    : '+ Nuovo giro')+'</button>');
-  b1.onclick=()=>push(inCorso?'buca':'nuovoGiro'); body.appendChild(b1);
   if(inCorso){
-    const b1b=el('<button class="btn secondary">+ Nuovo giro (chiude la bozza attuale)</button>');
-    b1b.onclick=()=>{ if(confirm('C\u2019e\u2019 un giro in corso a '+bozza.circolo+'. Aprirne uno nuovo lo mette da parte?')) push('nuovoGiro'); };
-    body.appendChild(b1b);
+    const quando = bozza.data ? fmtData(bozza.data) : 'oggi';
+    const c=el('<button style="display:flex; align-items:center; gap:12px; width:100%; text-align:left; '+
+      'padding:14px 15px; border-radius:12px; margin-bottom:10px; background:var(--corso-bg); '+
+      'border:1px solid var(--corso-bd); font-family:inherit; color:var(--testo)">'+
+      '<span style="width:7px; height:7px; border-radius:50%; background:var(--verde-chiaro); flex-shrink:0"></span>'+
+      '<span style="flex:1; min-width:0"><span style="display:block; font-size:14px; font-weight:600; overflow:hidden; '+
+      'text-overflow:ellipsis; white-space:nowrap">Riprendi il giro — '+esc(bozza.circolo)+'</span>'+
+      '<span style="display:block; font-size:11.5px; color:var(--grigio); margin-top:1px">buca '+
+      (bozza.bucaCorrente+1)+' di '+bozza.numBuche+' · iniziato '+esc(quando)+'</span></span>'+
+      '<span style="font-size:15px; color:var(--verde-testo)">›</span></button>');
+    c.onclick=()=>push('buca');
+    body.appendChild(c);
   }
 
-  const card=el('<div class="card"><h2>Giri salvati</h2></div>');
-  if(!giri.length) card.appendChild(el('<div class="empty">Nessun giro completato ancora.</div>'));
-  else giri.slice().reverse().forEach(g=>{
-    const A=analizzaGiro(g);
-    const it=el('<div class="listitem">'+
-      '<div><b>'+esc(g.circolo)+'</b><div class="meta">'+fmtData(g.data)+' · Tee '+esc(g.tee)+' · '+A.calc.nBuche+' buche'+(A.completo?'':' · formato vecchio')+'</div></div>'+
-      '<div style="text-align:right"><span class="badge">'+A.calc.score+'</span>'+
-        (A.completo?'<div class="meta '+(A.calc.sgTot>=0?'pos':'neg')+'" style="margin-top:3px">SG '+sgn(A.calc.sgTot,1)+'</div>':'')+'</div>'+
-    '</div>');
-    it.onclick=()=>push('riepilogoGiro',{id:g.id});
-    card.appendChild(it);
-  });
+  /* 2. azione primaria */
+  const b1=el('<button class="btn" style="border-radius:12px; font-size:15.5px; font-weight:600; '+
+    'letter-spacing:-0.01em; margin-bottom:20px">'+(inCorso?'+ Nuovo giro (mette da parte la bozza)':'+ Nuovo giro')+'</button>');
+  b1.onclick=()=>{
+    if(inCorso && !confirm('C’e’ un giro in corso a '+bozza.circolo+'. Aprirne uno nuovo lo mette da parte?')) return;
+    push('nuovoGiro');
+  };
+  body.appendChild(b1);
 
-  const daSalv=giriDaBackup();
-  if(daSalv>=2){
-    const w=el('<div class="card" style="border-color:var(--ambra)">'+
-      '<h2 style="color:var(--ambra)">Backup consigliato</h2>'+
-      '<div class="hint" style="margin-bottom:10px">Hai <b>'+daSalv+' giri</b> che esistono solo dentro questo '+
-        'telefono. Bastano pochi secondi per metterli al sicuro su iCloud.</div></div>');
-    const wb=el('<button class="btn" style="margin:0">Salva backup adesso</button>');
-    wb.onclick=async()=>{ const r=await eseguiBackup(); if(r==='ok') render(); };
-    w.appendChild(wb); body.appendChild(w);
+  /* 3-4. intestazione e lista */
+  if(!giri.length){
+    body.appendChild(el('<div class="pnl"><div class="t">Giri salvati</div>'+
+      '<div class="nt">Nessun giro completato ancora. Il primo giro accende tutto il resto.</div></div>'));
+  } else {
+    body.appendChild(el('<div style="display:flex; justify-content:space-between; margin-bottom:8px">'+
+      '<span style="font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--grigio)">Giri salvati</span>'+
+      '<span style="font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--grigio)">SG · Score</span></div>'));
+    const lista=el('<div style="background:var(--card); border:1px solid var(--bordo); border-radius:14px; '+
+      'overflow:hidden; margin-bottom:20px"></div>');
+    giri.slice().reverse().forEach((g,i)=>{
+      const A=analizzaGiro(g,'tour');
+      const d=A.calc.score-A.calc.par;
+      const b=el('<button style="display:flex; width:100%; justify-content:space-between; align-items:center; '+
+        'gap:12px; padding:13px 15px; background:none; border:none; font-family:inherit; cursor:pointer; '+
+        'color:var(--testo); text-align:left'+(i>0?'; border-top:1px solid var(--sep)':'')+'">'+
+        '<span style="flex:1; min-width:0">'+
+          '<span style="display:block; font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; '+
+          'white-space:nowrap">'+esc(g.circolo)+'</span>'+
+          '<span style="display:block; font-size:11.5px; color:var(--grigio); margin-top:1px">'+
+          esc(fmtData(g.data))+' · tee '+esc(String(g.tee||'').toLowerCase())+
+          (A.completo?'':' · formato vecchio')+'</span></span>'+
+        '<span style="display:flex; align-items:center; gap:14px; flex-shrink:0">'+
+          '<span style="font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; min-width:38px; '+
+          'text-align:right; color:'+(A.completo?(A.calc.sgTot>=0?'var(--verde-testo)':'var(--rosso)'):'var(--grigio)')+'">'+
+          (A.completo?sgnIt(A.calc.sgTot,1):'—')+'</span>'+
+          '<span style="min-width:40px; text-align:right">'+
+            '<span style="display:block; font-size:18px; font-weight:700; font-variant-numeric:tabular-nums">'+A.calc.score+'</span>'+
+            '<span style="display:block; font-size:11px; color:var(--grigio); font-variant-numeric:tabular-nums">'+
+            (d===0?'±0':sgn(d,0))+'</span></span>'+
+          '<span style="font-size:15px; color:var(--grigio); margin-left:2px">›</span></span></button>');
+      b.onclick=()=>push('riepilogoGiro',{id:g.id});
+      lista.appendChild(b);
+    });
+    body.appendChild(lista);
   }
 
-  // L1: i giri sono il contenuto, vengono subito dopo l'azione. Le utilita'
-  // vivono nella voce "Altro" della barra inferiore. Lo stato della
-  // sincronizzazione sta in fondo, silenzioso quando tutto va bene.
-  body.appendChild(card);
+  /* 5. stato della sincronizzazione */
   body.appendChild(rigaStatoSync());
-  return {header:'Giri', body};
+  const n=giri.length;
+  return {header:'Giri', sub: n? (n+(n===1?' giro salvato':' giri salvati')+
+    (giri[n-1]&&giri[n-1].data? ' · ultimo il '+fmtData(giri[n-1].data):'')) : 'nessun giro ancora', body:body};
 };
 
-/* ---------------- ALTRO (utilita') ---------------- */
+/* ---------------- ALTRO (utilita') ----------------
+   v12 — in cima le barre di copertura della qualita' del dato, come da
+   handoff: verde sopra l'80%, neutra sopra il 60%, rossa sotto. Sotto,
+   l'elenco delle voci, ognuna col suo stato.                               */
 VIEWS.altro = function(){
   const body=el('<div></div>');
   const arch=LS.get('hcp_archivio_v3',ARCHIVIO_DEFAULT);
@@ -4119,24 +4746,52 @@ VIEWS.altro = function(){
   const st=S();
   const daSalv=giriDaBackup();
   let annOk=0; giri.forEach(g=>{ if(g.annotato===true) annOk++; });
+
+  if(giri.length){
+    const Q=statQualita();
+    let bTot=0, bPin=0, cCorto=0, cOst=0;
+    giri.forEach(g=>(g.buche||[]).forEach(b=>{ bTot++; if(b.posizionePin) bPin++;
+      (b.colpi||[]).forEach(c=>{ if(c.lie && c.lie!=='green' && c.distM>0 && c.distM*M_TO_YD<=30){
+        cCorto++; if(c.ostacolo!==null && c.ostacolo!==undefined) cOst++; } }); }));
+    const righe=[];
+    if(Q.coperturaEsito!==null) righe.push({nome:'Settore di esito', pct:100*Q.coperturaEsito,
+      nota:Q.conEsito+' colpi su '+Q.daEsito+' che lo richiedono'});
+    righe.push({nome:'Distanze annotate in campo', pct: giri.length?100*annOk/giri.length:0,
+      nota:annOk+' giri su '+giri.length});
+    if(bTot) righe.push({nome:'Posizione della bandiera', pct:100*bPin/bTot, nota:bPin+' buche su '+bTot});
+    if(cCorto) righe.push({nome:'Difficolta’ del colpo corto', pct:100*cOst/cCorto, nota:cOst+' colpi su '+cCorto});
+    righe.push({nome:'Condizioni del giro segnate', pct: giri.length?100*(giri.length-Q.senzaCond)/giri.length:0,
+      nota:(giri.length-Q.senzaCond)+' giri su '+giri.length});
+    const ric = Q.ricKO.length===0;
+    body.appendChild(el(pannello({titolo:'Qualita’ del dato',
+      grafico: grafCopertura(righe),
+      chiusura:'Autodiagnosi del motore: <b>'+(ric?'superata':'NON superata')+'</b> su '+Q.riconciliazioni.length+
+        ' giri'+(ric?'':' — '+Q.ricKO.length+' con scarto')+'. '+
+        (Q.integrKO.length? Q.integrKO.length+' giri hanno una sequenza sospetta: entra in Qualita’ del dato per aprirli.'
+          :'Nessuna sequenza sospetta.')})));
+  }
+
   const voci=[
     ['archivio','Campi', Object.keys(arch).length+' percorsi in archivio'],
-    ['backup','Backup', daSalv>0 ? daSalv+' giri da mettere al sicuro' : 'tutto salvato'],
+    ['backup','Backup e ripristino', daSalv>0 ? daSalv+' giri da mettere al sicuro' : 'tutto salvato'],
     ['sincronizza','Sincronizzazione', st.attiva ? (st.ultimoErrore?'ferma: da controllare':'attiva') : 'spenta'],
-    ['qualita','Qualita\u2019 del dato', giri.length ? (annOk+' giri su '+giri.length+' annotati in campo') : 'si riempie dal primo giro'],
+    ['qualita','Qualita’ del dato', giri.length ? 'copertura, deriva, sequenze sospette' : 'si riempie dal primo giro'],
     ['metodo','Metodo e fonti', 'baseline, limiti dichiarati'],
     ['impostazioni','Impostazioni', 'misura, telemetro, tipo di giro']
   ];
-  const c=el('<div class="card"></div>');
-  voci.forEach(v=>{
-    const it=el('<div class="listitem"><div><b>'+v[1]+'</b><div class="meta">'+v[2]+'</div></div><span class="frecc">\u203a</span></div>');
+  const c=el('<div style="background:var(--card); border:1px solid var(--bordo); border-radius:14px; overflow:hidden"></div>');
+  voci.forEach((v,i)=>{
+    const it=el('<button style="display:flex; width:100%; justify-content:space-between; align-items:center; '+
+      'gap:10px; padding:14px 15px; background:none; border:none; font-family:inherit; text-align:left; '+
+      'color:var(--testo)'+(i>0?'; border-top:1px solid var(--sep)':'')+'">'+
+      '<span><span style="display:block; font-size:14px; font-weight:600">'+v[1]+'</span>'+
+      '<span style="display:block; font-size:11.5px; color:var(--grigio); margin-top:1px">'+esc(v[2])+'</span></span>'+
+      '<span style="font-size:15px; color:var(--grigio)">›</span></button>');
     it.onclick=()=>push(v[0]);
     c.appendChild(it);
   });
   body.appendChild(c);
-  body.appendChild(el('<div class="hint" style="padding:0 4px">Ogni voce porta con se\u2019 il suo stato: '+
-    'si vede se serve entrarci ancora prima di toccare.</div>'));
-  return {header:'Altro', body};
+  return {header:'Altro', sub:'utilita’, dati e metodo', body:body};
 };
 
 /* ---------------- NUOVO GIRO ---------------- */
@@ -4295,11 +4950,22 @@ VIEWS.nuovoGiro = function(){
 function vaiRadice(v){ nav=[{view:v}]; render(); }
 function barraInferiore(attiva){
   const inCorso = bozza && bozza.stato==='in_corso';
+  /* v12: icone SVG stroke 2px 17x17, come da handoff. Le emoji rendevano
+     diverse su ogni sistema e non si potevano colorare. */
+  const sv=d=>'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" '+
+    'stroke-width="2" stroke-linecap="round">'+d+'</svg>';
+  const ICO={
+    giri: sv('<path d="M6 22V3"></path><path d="M6 4h11l-2.5 4L17 12H6"></path>'),
+    registra: sv('<path d="M12 5v14"></path><path d="M5 12h14"></path>'),
+    stat: sv('<path d="M4 20V11"></path><path d="M10 20V5"></path><path d="M16 20v-6"></path><path d="M22 20V8"></path>'),
+    altro:'<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">'+
+      '<circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg>'
+  };
   const b=el('<div class="bottombar">'+
-    '<button class="bb'+(attiva==='home'?' on':'')+'" data-v="home"><span class="ic">\u26f3</span>Giri</button>'+
-    '<button class="bb cta" data-v="registra"><span class="ic">'+(inCorso?'\u25b6':'\uff0b')+'</span>'+(inCorso?'Riprendi':'Registra')+'</button>'+
-    '<button class="bb'+(attiva==='statistiche'?' on':'')+'" data-v="statistiche"><span class="ic">\ud83d\udcca</span>Statistiche</button>'+
-    '<button class="bb'+(attiva==='altro'?' on':'')+'" data-v="altro"><span class="ic">\u22ef</span>Altro</button>'+
+    '<button class="bb'+(attiva==='home'?' on':'')+'" data-v="home"><span class="ic">'+ICO.giri+'</span>Giri</button>'+
+    '<button class="bb'+(attiva==='registra'?' on':'')+'" data-v="registra"><span class="ic">'+ICO.registra+'</span>'+(inCorso?'Riprendi':'Registra')+'</button>'+
+    '<button class="bb'+(attiva==='statistiche'?' on':'')+'" data-v="statistiche"><span class="ic">'+ICO.stat+'</span>Statistiche</button>'+
+    '<button class="bb'+(attiva==='altro'?' on':'')+'" data-v="altro"><span class="ic">'+ICO.altro+'</span>Altro</button>'+
   '</div>');
   b.onclick=e=>{
     const x=e.target.closest('.bb'); if(!x) return;
@@ -4311,9 +4977,9 @@ function barraInferiore(attiva){
 }
 
 function rerenderFermo(){
-  const y=window.scrollY;
+  const m=document.querySelector('main');
+  _scrollDa = m? m.scrollTop : 0;
   render();
-  window.scrollTo(0,y);
 }
 
 VIEWS.buca = function(){
@@ -4734,18 +5400,33 @@ VIEWS.statistiche = function(){
       '<option value="tour"'+(STAT_F.baseline!=='media'?' selected':'')+'>PGA Tour (dato pubblicato)</option>'+
       '<option value="media"'+(STAT_F.baseline==='media'?' selected':'')+'>La tua media (ultimi 20 giri)</option></select></div>'+
   '</div>');
-  f.querySelector('#fC').onchange=e=>{STAT_F.circolo=e.target.value; render();};
-  f.querySelector('#fT').onchange=e=>{STAT_F.tee=e.target.value; render();};
-  f.querySelector('#fP').onchange=e=>{STAT_F.periodo=e.target.value; render();};
-  f.querySelector('#fB').onchange=e=>{STAT_F.baseline=e.target.value; render();};
+  /* v10: rerenderFermo invece di render, cosi' cambiare un filtro non riporta
+     la pagina in cima. L'intestazione e' fissa, la posizione va conservata.  */
+  f.querySelector('#fC').onchange=e=>{STAT_F.circolo=e.target.value; rerenderFermo();};
+  f.querySelector('#fT').onchange=e=>{STAT_F.tee=e.target.value; rerenderFermo();};
+  f.querySelector('#fP').onchange=e=>{STAT_F.periodo=e.target.value; rerenderFermo();};
+  f.querySelector('#fB').onchange=e=>{STAT_F.baseline=e.target.value; rerenderFermo();};
   // L3: i filtri stanno dietro un riassunto sempre visibile, che dichiara
   // accanto a ogni numero il perimetro da cui e' calcolato.
   const riassF=(STAT_F.periodo==='tutti'?'Tutti i giri':'Ultimi '+STAT_F.periodo+' giri')+
     ' · '+(STAT_F.circolo==='__tutti__'?'tutti i circoli':STAT_F.circolo)+
     ' · vs '+(STAT_F.baseline==='media'?'la tua media':'Tour');
-  const chipF=el('<button class="fchip">'+esc(riassF)+' <span class="pencil">'+(STAT_F.filtri?'Chiudi':'Cambia')+'</span></button>');
-  chipF.onclick=()=>{ STAT_F.filtri=!STAT_F.filtri; render(); };
-  body.appendChild(chipF);
+  /* v12 — striscia di filtri del handoff: quattro chip scrollabili, ognuno con
+     etichetta maiuscola, valore e caret. Tocco = apre i selettori sotto, che
+     sono quelli veri collegati a STAT_F. */
+  const chipTesto={
+    periodo: STAT_F.periodo==='tutti'?'tutti':('ultimi '+STAT_F.periodo),
+    circolo: STAT_F.circolo==='__tutti__'?'tutti':circoloBreve(STAT_F.circolo),
+    tee: STAT_F.tee==='__tutti__'?'tutti':String(STAT_F.tee).toLowerCase(),
+    baseline: STAT_F.baseline==='media'?'la tua media':'Tour'
+  };
+  const striscia=el('<div class="filtri">'+
+    [['periodo','Periodo'],['circolo','Circolo'],['tee','Tee'],['baseline','Baseline']].map(x=>
+      '<button class="filtro" data-f="'+x[0]+'"><span class="fl">'+x[1]+'</span>'+
+      '<span class="fv">'+esc(chipTesto[x[0]])+'</span><span class="fc">\u25be</span></button>').join('')+
+    '</div>');
+  striscia.onclick=e=>{ if(e.target.closest('.filtro')){ STAT_F.filtri=!STAT_F.filtri; rerenderFermo(); } };
+  body.appendChild(striscia);
   if(STAT_F.filtri) body.appendChild(f);
 
   let sel=tutti.slice().sort((a,b)=>(a.data||'')<(b.data||'')?-1:1);
@@ -4773,8 +5454,21 @@ VIEWS.statistiche = function(){
   const etichetta = 'al PGA Tour';
   const MS = STAT_F.baseline==='media' ? mediaStabile(baseCalc) : null;
 
-  body.appendChild(el('<div class="hint" style="margin-top:-4px;">'+nG+' giri · '+totB+' buche'+
-    (completi.length<nG?' · '+completi.length+' con dettaglio colpo per colpo':'')+'</div>'));
+  /* v12 — card hero: la metrica che apre la schermata, con la sparkline del
+     periodo accanto. Metrica predefinita: strokes gained per giro. */
+  if(completi.length){
+    const serieSG=completi.map(g=>g.calc.sgTot);
+    const mSG=media(serieSG);
+    body.appendChild(el('<div class="hero"><div class="lab">Strokes gained per giro</div>'+
+      '<div class="riga"><div><div class="big" style="color:'+(mSG>=0?'var(--verde-testo)':'var(--rosso)')+'">'+
+      sgnIt(mSG,1)+'</div><div class="sub">media su '+completi.length+' giri, rispetto al Tour</div></div>'+
+      grafSpark(serieSG)+'</div></div>'));
+  } else {
+    body.appendChild(el('<div class="hero"><div class="lab">Punteggio medio</div>'+
+      '<div class="riga"><div><div class="big">'+scoreMedio.toFixed(1)+'</div>'+
+      '<div class="sub">'+sgn(diffMedia,1)+' sul par, su '+nG+' giri</div></div>'+
+      grafSpark(A.map(g=>-(g.calc.score-g.calc.par)))+'</div></div>'));
+  }
   // R3+L3: KPI a striscia compatta, con delta vs la finestra precedente di pari
   // lunghezza (stessi filtri). Colore di stato solo sul testo, mai da solo: il segno c'e' sempre.
   let prev=null;
@@ -4801,12 +5495,23 @@ VIEWS.statistiche = function(){
     }
     return '<div class="s4"><div class="lab">'+lab+'</div><div class="v">'+v+'</div>'+d+'</div>';
   }
-  body.appendChild(el('<div class="strip4">'+
-    s4('Score', scoreMedio.toFixed(1), prev?scoreMedio-prev.score:null, 'giu', {dec:1, soglia:0.05})+
-    s4('GIR', girPct+'%', prev?girPct-prev.gir:null, 'su', {dec:0, soglia:0.5})+
-    s4('Putt/buca', puttB.toFixed(2), prev?puttB-prev.putt:null, 'giu', {dec:2, soglia:0.005})+
-    s4('Scrambling', (scrPct===null?'\u2014':scrPct+'%'), (prev&&prev.scr!==null&&scrPct!==null)?scrPct-prev.scr:null, 'su', {dec:0, soglia:0.5})+
-  '</div>'+(prev?'<div class="hint" style="margin:-6px 0 10px 2px">Il delta confronta con i '+prev.n+' giri precedenti, a parita\u2019 di filtri.</div>':'')));
+  /* v12 — quattro KPI a celle contigue, come nella scheda giro. Il delta
+     resta, in piccolo sotto il valore. */
+  const kc=(lab,val,delta,buonoSuGiu,dec,u)=>{
+    let sub='\u00a0';   // niente entita' HTML dentro <script>: regola dell'archivio
+    if(prev && delta!==null && Math.abs(delta)>=(dec===0?0.5:0.005)){
+      const buono = buonoSuGiu==='giu' ? delta<0 : delta>0;
+      sub='<span style="color:'+(buono?'var(--verde-testo)':'var(--rosso)')+'">'+sgnIt(delta,dec)+(u||'')+'</span>';
+    } else if(prev) sub='\u2248';
+    return '<div class="c"><div class="lab">'+lab+'</div><div class="v">'+val+'</div><div class="sub">'+sub+'</div></div>';
+  };
+  body.appendChild(el('<div class="kpin quattro">'+
+    kc('Score', scoreMedio.toFixed(1).replace('.',','), prev?scoreMedio-prev.score:null, 'giu', 1)+
+    kc('GIR', girPct+'%', prev?girPct-prev.gir:null, 'su', 0, '%')+
+    kc('Putt/buca', puttB.toFixed(2).replace('.',','), prev?puttB-prev.putt:null, 'giu', 2)+
+    kc('Scrambling', (scrPct===null?'\u2014':scrPct+'%'), (prev&&prev.scr!==null&&scrPct!==null)?scrPct-prev.scr:null, 'su', 0, '%')+
+  '</div>'+(prev?'<div class="nt" style="margin:-10px 0 12px 2px">Il delta confronta con i '+prev.n+
+    ' giri precedenti, a parita\u2019 di filtri.</div>':'')));
 
   /* v10: sette schede per domanda — Sintesi, Gioco lungo, Gioco corto, Putt,
      Base, Incroci, Consigli. I pannelli si costruiscono col codice collaudato
@@ -4862,7 +5567,10 @@ VIEWS.statistiche = function(){
     const cB=el('<div class="card"><h2>Dove stanno i colpi che perdi</h2>'+
       '<div class="verd">'+verdB+'</div>'+
       '<div class="legg">leggibilita\u2019 <b>'+pallini+'</b> \u00b7 '+nA+' giri \u2014 '+glegg+'</div>'+
-      catsB.map(k=>dvRow(CAT_NOME[k], mB[k], mxB, 1)).join('')+
+      /* v12: cascata verticale del handoff. Ogni gradino parte dal cumulato
+         precedente, cosi' si vede come il divario si compone reparto per
+         reparto invece di quattro barre indipendenti. */
+      grafCascata(catsB.map(k=>({nome:CAT_NOME[k], v:mB[k]})), 12)+
       '<div class="stcap">Scomposizione del divario dalla baseline PGA Tour (dato pubblicato, Broadie 2012), per '+
       'reparto. Broadie: fra livelli diversi circa due terzi del divario sta nel gioco lungo, il putting pesa ~15%. '+
       'La riga <b>tee-to-green</b> (somma dei primi tre reparti) vale <b>'+sgn(mB.tee+mB.approccio+mB.corto,1)+
@@ -5004,7 +5712,32 @@ VIEWS.statistiche = function(){
       'dalla stessa distanza sono due colpi diversi, ed e\u2019 il numero che decide se il driver aggressivo paga.<br><br>'+
       '<b>Rif.</b> e\u2019 la prossimita\u2019 PGA Tour 2022-23 DAL FAIRWAY, interpolata al centro della '+
       'fascia e convertita dalle yard (da 100-125 yd 20\u20194\u201d, da 150-175 yd 28\u20199\u201d). Va letta '+
-      'come ordine di grandezza, non al piede: le tue fasce sono in metri e le loro in yard.</div></div>'));
+      'come ordine di grandezza, non al piede: le tue fasce sono in metri e le loro in yard.</div>'+
+      /* v10 — barre divergenti del handoff: scala fissa +-0,10 SG per colpo, tacca
+         zero centrale, e le fasce sotto N_MIN in grigio al 50% con il conteggio
+         in etichetta. La scala e' fissa perche' due letture successive con filtri
+         diversi devono essere confrontabili a occhio.                          */
+      '<div style="margin-top:12px">'+
+      fasce.map(x=>{
+        /* scala fissa +-0,50 e non +-0,10 come nel handoff: a +-0,10 sei righe su
+           otto saturano e le barre non dicono piu' niente. +-0,10 e' la
+           dispersione del Tour, non quella di un dilettante. Fissa resta, perche'
+           due letture con filtri diversi devono confrontarsi a occhio. */
+        const S=0.50, q=Math.max(-1,Math.min(1, x.sgColpo/S));
+        const col = x.solido ? (x.sgColpo>=0?'var(--verde)':'var(--rosso)') : 'var(--tenue)';
+        const w=Math.abs(q)*50;
+        return '<div class="dvrow"'+(x.solido?'':' style="opacity:.5"')+'>'+
+          '<div class="d">'+esc(x.label)+(x.solido?'':' <span style="font-size:10px">('+x.n+')</span>')+'</div>'+
+          '<div class="dvtrack"><div class="zero"></div>'+
+          '<div class="dvbar" style="background:'+col+'; '+
+            (q>=0?('left:50%; width:'+w.toFixed(1)+'%'):('right:50%; width:'+w.toFixed(1)+'%'))+'"></div></div>'+
+          '<div class="n" style="color:'+(x.solido?(x.sgColpo>=0?'var(--verde-testo)':'var(--rosso)'):'var(--grigio)')+
+            '">'+sgnIt(x.sgColpo,2)+'</div></div>';
+      }).join('')+
+      '<div class="stcap" style="margin-top:2px">Scala fissa \u22120,50 \u00b7 0 \u00b7 +0,50 SG per colpo. '+
+      'Le barre che toccano il bordo sono oltre la scala, non al limite. Grigio = sotto i '+N_MIN_FASCIA+
+      ' colpi, col conteggio fra parentesi.</div></div>'+
+      '</div>'));
 
     /* ══ v9 — FRL: prossimita' normalizzata sulla lunghezza del colpo ══════ */
     {
@@ -5988,6 +6721,158 @@ VIEWS.statistiche = function(){
     }
   }
 
+  /* ══ v12 — LE VISUALIZZAZIONI DEL HANDOFF ════════════════════════════════
+     Ognuna sta accanto ai numeri che l'app calcolava gia': il handoff chiede di
+     aggiungere grafici, non di cambiare output.                              */
+  if(completi.length){
+    /* heatmap reparti x giri, in Sintesi */
+    if(completi.length>=4){
+      const cats=['tee','approccio','corto','putting'];
+      p1.appendChild(el(pannello({titolo:'Dove si perde, giro per giro',
+        nota:'Una riga per reparto, una colonna per giro. Piu\u2019 intenso il colore, piu\u2019 grande lo scarto: '+
+          'verde guadagni, rosso perdite. Serve a vedere se un reparto perde <b>sempre</b> o solo in certe giornate.',
+        grafico: grafHeat(cats.map(k=>({nome:CAT_NOME[k], vals:completi.map(g=>g.calc.sgCat[k])})),
+          fmtDataBreve(completi[0].data), fmtDataBreve(completi[completi.length-1].data))})));
+    }
+    /* small multiples per reparto */
+    if(completi.length>=8){
+      const cats=['tee','approccio','corto','putting'];
+      p1.appendChild(el(pannello({titolo:'Andamento per reparto',
+        nota:'Quattro grafici sulla <b>stessa scala</b>, cosi\u2019 si vede subito quale reparto pesa di piu\u2019.',
+        grafico: grafMini(cats.map(k=>({nome:CAT_NOME[k], vals:completi.map(g=>g.calc.sgCat[k])})))})));
+    }
+    /* ellisse del drive */
+    {
+      const BS=statBastoni(sel).filter(b=>b.bastone!=='Putter' && b.latDisp!==null && b.disp!==null);
+      const dr=BS.find(b=>b.bastone==='Driver') || BS[0];
+      if(dr) p1.appendChild(el(pannello({titolo:'Dispersione del drive',
+        nota:'Scarto tipo longitudinale <b>'+dr.disp+' m</b> e laterale <b>'+dr.latDisp+' m</b> su '+dr.nLat+
+          ' colpi con settore, per '+esc(dr.bastone)+'.',
+        grafico: grafEllisse(dr.disp, dr.latDisp, 18, 12,
+          'RICOSTRUZIONE dichiarata: l\u2019app registra il lato e il settore, non le coordinate. Gli assi sono i due '+
+          'scarti tipo misurati, e la componente laterale dei settori diagonali e\u2019 approssimata a 45 gradi. '+
+          'L\u2019ellisse grigia e\u2019 un riferimento indicativo, non un dato pubblicato per fascia.')})));
+    }
+    /* dot plot della sacca */
+    {
+      const BS=statBastoni(sel).filter(b=>b.bastone!=='Putter' && b.distMedia!==null)
+        .slice().sort((a,b)=>(b.distMedia||0)-(a.distMedia||0));
+      if(BS.length>=3) p1.appendChild(el(pannello({titolo:'Scala dei bastoni',
+        nota:'Il pallino e\u2019 la media, il segmento va dal 10\u00b0 al 90\u00b0 percentile delle distanze '+
+          'percorse. In ordine di sacca, putter escluso.',
+        grafico: grafDot(BS.map(b=>({nome:b.bastone, med:b.distMedia, p10:b.p10, p90:b.p90})), 60, 285),
+        chiusura:'La distanza e\u2019 quella <b>percorsa</b>, corretta col settore, non il carry. Per scegliere il '+
+          'bastone la colonna che conta e\u2019 il 70\u00b0 percentile, nella tabella qui sotto.'})));
+    }
+    /* Pareto delle code */
+    {
+      const persi=[];
+      completi.forEach(g=>g.bucheCalc.forEach(b=>b.colpi.forEach(x=>{ if(x.lie!=='green' && x.sg<0) persi.push(x.sg); })));
+      if(persi.length>=30) p1.appendChild(el(pannello({titolo:'La curva dei colpi persi',
+        nota:'Cumulata dei colpi persi, dal colpo peggiore in avanti. Quanto piu\u2019 la curva sale a sinistra, '+
+          'tanto piu\u2019 le perdite stanno in pochi colpi.',
+        grafico: grafPareto(persi)})));
+    }
+    /* bersaglio della prossimita' */
+    {
+      const FA=statFasce(completi).filter(x=>x.nProx>0);
+      if(FA.length>=3) p1.appendChild(el(pannello({titolo:'Prossimita\u2019: dove lasci la palla',
+        nota:'Un cerchio per fascia: il raggio e\u2019 la distanza media a cui lasci la palla quando prendi il green.',
+        grafico: grafBersaglio(FA.map(x=>({nome:x.label.replace(' m',''), v:x.prox/x.nProx}))),
+        chiusura:'I numeri per fascia, con green presi e strokes gained, stanno nella tabella degli approcci.'})));
+    }
+    /* scatter partenza / residuo */
+    {
+      const pts=[];
+      completi.forEach(g=>g.bucheCalc.forEach(b=>b.colpi.forEach((x,i)=>{
+        if(x.cat!=='approccio' || x.penalita || !(x.distM>0)) return;
+        const nx=b.colpi[i+1];
+        pts.push({x:x.distM, y: nx? (nx.distM||0) : 0});
+      })));
+      if(pts.length>=20){
+        const FR=statFRL(completi);
+        const frl=FR.globale.med||7;
+        p1.appendChild(el(pannello({titolo:'Partenza e residuo, colpo per colpo',
+          nota:'Un punto per approccio: in orizzontale da dove parti, in verticale quanto lasci. La retta '+
+            'tratteggiata e\u2019 la tua prossimita\u2019 normalizzata ('+frl.toFixed(1).replace('.',',')+
+            '%): i punti sopra sono i colpi peggiori della tua media, quelli sotto i migliori.',
+          grafico: grafScatter(pts, frl)})));
+      }
+    }
+    /* bullet: tu contro il Tour */
+    {
+      const SB=statBase(A);
+      if(SB){
+        const righe=[];
+        if(SB.fir) righe.push({nome:'FIR', mio:SB.fir.pct, rif:RIF_SCRATCH.fir, max:100,
+          testoMio:Math.round(SB.fir.pct)+'%', testoRif:RIF_SCRATCH.fir+'%', suMeglio:true});
+        righe.push({nome:'GIR', mio:SB.gir.pct, rif:RIF_SCRATCH.gir, max:100,
+          testoMio:Math.round(SB.gir.pct)+'%', testoRif:RIF_SCRATCH.gir+'%', suMeglio:true});
+        if(SB.scr) righe.push({nome:'Scrambling', mio:SB.scr.pct, rif:RIF_SCRATCH.scr, max:100,
+          testoMio:Math.round(SB.scr.pct)+'%', testoRif:RIF_SCRATCH.scr+'%', suMeglio:true});
+        if(SB.sand) righe.push({nome:'Sand save', mio:SB.sand.pct, rif:RIF_SCRATCH.sand, max:100,
+          testoMio:Math.round(SB.sand.pct)+'%', testoRif:RIF_SCRATCH.sand+'%', suMeglio:true});
+        righe.push({nome:'Putt per buca', mio:SB.puttBuca, rif:RIF_SCRATCH.puttGiro/18, max:2.5,
+          testoMio:SB.puttBuca.toFixed(2).replace('.',','), testoRif:(RIF_SCRATCH.puttGiro/18).toFixed(2).replace('.',','),
+          suMeglio:false});
+        p1.appendChild(el(pannello({titolo:'Tu contro il riferimento',
+          nota:'Cinque metriche, ognuna sulla propria scala. Verde se stai meglio del riferimento, rosso se peggio: '+
+            'attenzione che sui <b>putt per buca meno e\u2019 meglio</b>.',
+          grafico: grafBullet(righe),
+          chiusura:'Il riferimento e\u2019 il giocatore scratch di Shot Scope, tranne i doppi che vengono dal Tour. '+
+            'Classe: dato divulgato, numerosita\u2019 non dichiarata dalla fonte.'})));
+      }
+    }
+    /* calendario mensile */
+    {
+      const perMese={};
+      A.forEach(g=>{ const k=(g.data||'').slice(0,7); if(!k) return;
+        if(!perMese[k]) perMese[k]={n:0, s:0}; perMese[k].n++; perMese[k].s+=g.calc.score-g.calc.par; });
+      const chiavi=Object.keys(perMese).sort();
+      if(chiavi.length>=2) p1.appendChild(el(pannello({titolo:'Stagione, mese per mese',
+        nota:'Punteggio medio sul par per mese: il verde e\u2019 tanto piu\u2019 intenso quanto piu\u2019 basso il punteggio.',
+        grafico: grafCalendario(chiavi.map(k=>({nome:(MESI_IT[parseInt(k.slice(5,7),10)-1]||k).slice(0,3),
+          punteggio:perMese[k].s/perMese[k].n, giri:perMese[k].n})))})));
+    }
+    /* curva di realizzazione dei putt sull'area del Tour */
+    {
+      const PU=statPutting(A);
+      const voci=PU.fasce.filter(f=>f.n>0).map(f=>{
+        const centro=f.hi>=999 ? f.lo+3 : (f.lo+f.hi)/2;
+        return {nome:f.label, breve:f.hi>=999?'12+':(f.lo===0?'<1':f.lo+'\u2013'+f.hi),
+          v:f.imbucati/f.n*100, rif:tourMakePct(centro), n:f.n};
+      });
+      if(voci.length>=4){
+        p1.appendChild(el(pannello({titolo:'Realizzazione dei putt',
+          nota:'La tua percentuale di imbucata per fascia, sopra l\u2019<b>area grigia del Tour</b>. '+
+            'Il riferimento del Tour e\u2019 preso al <b>centro della fascia</b>: dentro una fascia larga '+
+            'la percentuale cambia molto, quindi l\u2019area va letta come ordine di grandezza.',
+          grafico: grafCurvaRif(voci, {aria:'percentuale di putt imbucati per fascia contro il Tour'}),
+          chiusura:'Le barre bullet della stessa grandezza non sono state aggiunte sotto la tabella '+
+            '\u201cPutting per distanza\u201d: sarebbero lo stesso numero due volte, e la regola '+
+            '\u201cprofondita\u2019 senza duplicazioni\u201d vale piu\u2019 della lettera del handoff.'})));
+      }
+    }
+    /* colonne per buca, sul singolo circolo */
+    {
+      const cS=[...new Set(sel.map(g=>g.circolo))];
+      if(cS.length===1){
+        const pb=statPerBuca(A);
+        if(pb.length>=9){
+          const vals=[], pars=[];
+          pb.slice().sort((a,b)=>a.buca-b.buca).forEach(x=>{ vals.push(x.contratta); pars.push(x.par); });
+          p1.appendChild(el(pannello({titolo:'Buche che costano di piu\u2019, in ordine di gioco',
+            nota:'Una colonna per buca, dalla 1 alla 18 su '+esc(circoloBreve(cS[0]))+'. Verso l\u2019alto in rosso '+
+              'le buche che costano, verso il basso in verde quelle che rendono. Il numero della buca e\u2019 '+
+              'colorato per par.',
+            grafico: grafBuche(vals, pars),
+            chiusura:'I valori sono <b>contratti verso la media</b>: ordinare per media grezza selezionerebbe le '+
+              'buche piu\u2019 rumorose, non le piu\u2019 difficili.'})));
+        }
+      }
+    }
+  }
+
   /* ══ v11 — I PANNELLI DEL CATALOGO PGA TOUR ══════════════════════════════ */
   if(completi.length){
     const pct1=v=>v===null||v===undefined?'\u2014':v.toFixed(1)+'%';
@@ -6257,11 +7142,18 @@ VIEWS.statistiche = function(){
   const MAPPA=[
     ['Dove stanno i colpi che perdi','sintesi'],['Cosa allenare','sintesi'],['Sintesi','sintesi'],
     ['Il tuo livello, reparto per reparto','sintesi'],
+    ['Dove si perde, giro per giro','sintesi'],['Andamento per reparto','sintesi'],
+    ['Dispersione del drive','tee'],['Scala dei bastoni','tee'],
+    ['La curva dei colpi persi','appr'],['Prossimita\u2019: dove lasci la palla','appr'],
+    ['Partenza e residuo','appr'],
+    ['Tu contro il riferimento','base'],['Stagione, mese per mese','base'],
+    ['Buche che costano di piu\u2019, in ordine di gioco','incroci'],
     ['Dal tee: good drive','tee'],['Quanto rende ogni bastone','appr'],['Gapping','tee'],
     ['Dove finisce il tee shot','tee'],['Quanta buca copre il tee shot','tee'],
     ['Approcci: green e prossimita','appr'],['Da che distanza nascono birdie','appr'],
     ['Come finisce la buca, per fascia','appr'],['Colpi imbucati da fuori dal green','appr'],
     ['Scrambling: lo standard ShotLink','corto'],
+    ['Realizzazione dei putt','putt'],
     ['Putt: i numeri del Tour','putt'],
     ['Scoring: i numeri del Tour','base'],['Serie','base'],
     ['Bunker: greenside contro fairway','corto'],['Chip multipli','corto'],
@@ -6287,7 +7179,9 @@ VIEWS.statistiche = function(){
   const tabPerTitolo=t=>{ for(const m of MAPPA) if(t.indexOf(m[0])===0) return m[1]; return 'extra'; };
   [p0,p1,p2,p3].forEach(px=>{
     Array.from(px.children).forEach(ch=>{
-      const h=ch.querySelector ? ch.querySelector('h2') : null;
+      /* le card classiche hanno un <h2>, i pannelli del handoff un <div class="t">:
+         leggere solo l'h2 mandava tutti i pannelli nuovi nella scheda Consigli. */
+      const h=ch.querySelector ? (ch.querySelector('h2') || ch.querySelector('.t')) : null;
       paneNew[tabPerTitolo(h?h.textContent:'')].appendChild(ch);
     });
   });
@@ -6361,6 +7255,35 @@ VIEWS.statistiche = function(){
       (sb.length?'<div class="stcap"><b>Letture che si sbloccano:</b> '+sb.join('; ')+'.</div>':'')+
       '</div>');
     paneNew.extra.insertBefore(cC, paneNew.extra.firstChild);
+
+    /* v10 — «Cosa non e' ancora leggibile»: il handoff lo chiede nella scheda
+       Consigli. Non e' un duplicato delle righe grigie: quelle dicono «questa
+       riga non si legge», questa dice quanti dati mancano perche' si legga.  */
+    {
+      const fam=[];
+      const conta=(nome, righe, campo)=>{
+        const sotto=righe.filter(r=>r[campo]>0 && r[campo]<N_MIN_FASCIA);
+        if(sotto.length) fam.push({nome:nome, quante:sotto.length, tot:righe.length,
+          manca:sotto.reduce((a,r)=>a+(N_MIN_FASCIA-r[campo]),0)});
+      };
+      conta('Approcci per fascia di distanza', statFasce(A), 'n');
+      conta('Putting per fascia', statPutting(A).fasce, 'n');
+      conta('Scrambling per fascia (ShotLink)', statScramblingTour(A).fasce, 'n');
+      conta('Rendimento per fascia di stroke index', statPerSI(A).fasce, 'n');
+      if(fam.length){
+        paneNew.extra.appendChild(el('<div class="card"><h2>Cosa non e\u2019 ancora leggibile</h2>'+
+          '<div class="hint">Le famiglie di fasce che hanno almeno una riga sotto la soglia di campione '+
+          '('+N_MIN_FASCIA+' casi). La colonna a destra e\u2019 quanti casi mancano <b>in tutto</b> perche\u2019 '+
+          'ogni riga della famiglia diventi leggibile.</div>'+
+          '<table class="stat"><thead><tr><th>Famiglia</th><th class="n">Righe deboli</th><th class="n">Ne mancano</th></tr></thead><tbody>'+
+          fam.map(f=>'<tr><td>'+esc(f.nome)+'</td><td class="n">'+f.quante+' su '+f.tot+
+            '</td><td class="n">'+f.manca+'</td></tr>').join('')+
+          '</tbody></table>'+
+          '<div class="stcap">Non e\u2019 una scaletta da riempire a tutti i costi: alcune fasce restano '+
+          'rare perche\u2019 quei colpi si giocano poco. Serve a sapere <b>quali verdetti aspettare</b> '+
+          'e quali no.</div></div>'));
+      }
+    }
   }
 
   TABS.forEach(t=>{ if(!paneNew[t.k].children.length)
@@ -6392,7 +7315,38 @@ VIEWS.statistiche = function(){
   });
   window.addEventListener('resize', adatta, {once:true});
 
-  return {header:'Statistiche', body};
+  /* v10 — «Metodo e definizioni»: link tenue in fondo che apre un paragrafo con
+     baseline, definizioni e limite del campione. La scheda completa resta in
+     Altro > Metodo e fonti: questo e' il promemoria a portata di pollice.     */
+  {
+    const box=el('<div style="margin:4px 2px 8px 2px">'+
+      '<button class="tgl" data-mtd="1">Metodo e definizioni</button>'+
+      '<div data-mtdbox="1" style="display:none; font-size:11.5px; line-height:1.6; color:var(--grigio); margin-top:8px">'+
+      '<b>Baseline.</b> '+(STAT_F.baseline==='media'?'La tua media: finestra stabile degli ultimi 20 giri completi.':
+        'PGA Tour, tabelle pubblicate (Broadie 2012 per il gioco lungo, 2011 per il putting), interpolate.')+
+      ' Lo strokes gained e\u2019 la differenza fra i colpi che ti sono serviti e quelli attesi dalla baseline '+
+      'nella stessa posizione: sopra lo zero guadagni, sotto perdi.<br><br>'+
+      '<b>Perimetro.</b> '+nG+(nG===1?' giro':' giri')+' \u00b7 '+totB+' buche'+
+      (completi.length!==nG?' \u00b7 '+completi.length+' completi (lo strokes gained si calcola solo su questi)':'')+'.<br><br>'+
+      '<b>Limite del campione.</b> Sotto '+N_MIN_FASCIA+' casi una riga si mostra in grigio e non si legge: '+
+      'la differenza che vedresti sarebbe rumore. I verdetti si scrivono solo quando lo scarto supera '+
+      'due errori standard.<br><br>'+
+      '<b>Le fasce non si cambiano da qui.</b> Approcci, putt, gioco corto e scrambling usano fasce fisse, '+
+      'dichiarate nei rispettivi pannelli e allineate alle fonti: cambiarle a mano renderebbe due letture '+
+      'successive non confrontabili.</div></div>');
+    box.querySelector('[data-mtd]').onclick=()=>{
+      const d=box.querySelector('[data-mtdbox]'), b=box.querySelector('[data-mtd]');
+      const ap=d.style.display!=='none';
+      d.style.display=ap?'none':'block';
+      b.textContent=ap?'Metodo e definizioni':'Nascondi il metodo';
+    };
+    body.appendChild(box);
+  }
+
+  return {header:'Statistiche',
+    sub: nG+(nG===1?' giro':' giri')+' · '+totB+' buche · baseline '+
+      (STAT_F.baseline==='media'?'la tua media':'Tour'),
+    body:body};
 };
 /* ---------------- RIEPILOGO GIRO ---------------- */
 /* v10: il giro singolo ha le stesse schede delle statistiche di periodo —
@@ -6412,19 +7366,26 @@ VIEWS.riepilogoGiro = function(p){
   const cond=g.condizioni;
   const RIF=statBaseStabile();
 
-  /* ---- testata sempre visibile ---- */
-  body.appendChild(el('<div class="card"><h2>'+esc(g.circolo)+'</h2>'+
-    '<div class="hint">'+fmtData(g.data)+' · '+esc(g.tipo)+(g.gara?' · '+esc(g.gara):'')+
-      ' · Tee '+esc(g.tee)+' · '+c.nBuche+' buche</div>'+
-    (cond?'<div class="hint tight">Vento '+((VENTO_OPZ[cond.vento]||{}).n||'—').toLowerCase()+
-      ' · terreno '+((METEO_OPZ[cond.meteo]||{}).n||'—').toLowerCase()+
-      ' · green '+((GREEN_OPZ[cond.green]||{}).n||'—').toLowerCase()+'</div>':'')+
-    '<div style="font-size:36px;font-weight:800;color:var(--verde-testo);margin-top:6px;">'+c.score+
-      '<span style="font-size:16px;color:var(--grigio);"> (par '+c.par+', '+sgn(d,0)+')</span></div>'+
-    (A.completo?'<div class="hint" style="margin-top:8px">Strokes gained totale '+
-      '<b class="'+(c.sgTot>=0?'pos':'neg')+'">'+sgn(c.sgTot)+'</b> rispetto al PGA Tour'+
-      (RIF?' · la tua media: '+sgn(RIF.vsPar,1)+' sul par':'')+'</div>':'')+
-  '</div>'));
+  /* ---- v12: tre KPI in fila, come da handoff ----
+     Il KPI dello SG e il cumulato dell'arco devono chiudere sullo stesso
+     numero: e' lo stesso dato, sommato nello stesso ordine. */
+  const F1=statFairway([A]);
+  body.appendChild(el('<div class="kpin tre">'+
+    '<div class="c"><div class="lab">Punteggio</div>'+
+      '<div class="v">'+c.score+'</div>'+
+      '<div class="sub">'+(d===0?'in par':sgn(d,0)+' sul par')+'</div></div>'+
+    '<div class="c"><div class="lab">SG totale</div>'+
+      '<div class="v" style="color:'+(A.completo?(c.sgTot>=0?'var(--verde-testo)':'var(--rosso)'):'var(--grigio)')+'">'+
+      (A.completo?sgnIt(c.sgTot,1):'—')+'</div>'+
+      '<div class="sub">rispetto al Tour</div></div>'+
+    '<div class="c"><div class="lab">GIR · fairway</div>'+
+      '<div class="v">'+c.gir+' · '+(F1.tot?F1.presi:'—')+'</div>'+
+      '<div class="sub">su '+c.nBuche+' · su '+(F1.tot||0)+'</div></div>'+
+  '</div>'+
+  (cond?'<div class="nt" style="margin:-6px 0 14px 2px">Vento '+((VENTO_OPZ[cond.vento]||{}).n||'—').toLowerCase()+
+    ' · terreno '+((METEO_OPZ[cond.meteo]||{}).n||'—').toLowerCase()+
+    ' · green '+((GREEN_OPZ[cond.green]||{}).n||'—').toLowerCase()+
+    (g.gara?' · '+esc(g.gara):'')+'</div>':'')));
 
   const TABS=[{k:'sintesi',n:'Sintesi'},{k:'lungo',n:'Gioco lungo'},{k:'corto',n:'Gioco corto'},
               {k:'putt',n:'Putt'},{k:'base',n:'Base'},{k:'incroci',n:'Incroci'}];
@@ -6437,6 +7398,36 @@ VIEWS.riepilogoGiro = function(p){
     '<div class="hint">Questo giro e’ stato registrato senza il dettaglio colpo per colpo: qui non c’e’ nulla da calcolare.</div></div>';
 
   /* ══ SINTESI ══ */
+  /* v12 — l'arco del giro apre la scheda: e' la cosa che dice dove il giro si e'
+     deciso. I pallini sono colorati per esito della buca (verde birdie, grigio
+     par, rosso bogey), la linea dal segno del cumulato finale. */
+  if(A.completo && A.bucheCalc.length>=9){
+    let cum=0; const serie=[], colori=[], etichette=[];
+    A.bucheCalc.forEach(b=>{
+      cum+=(b.sg||0); serie.push(cum);
+      colori.push(b.diff<=-1?'var(--verde-testo)':(b.diff===0?'var(--dv-neutral)':'var(--rosso)'));
+      etichette.push('buca '+b.buca+' · par '+b.par);
+    });
+    pane.sintesi.appendChild(el(pannello({titolo:'L’arco del giro',
+      nota:'Strokes gained <b>cumulato</b> buca per buca. Sopra lo zero stai guadagnando sulla baseline, sotto la '+
+        'stai perdendo. I pallini sono colorati per esito della buca; tocca il grafico per leggere un punto.',
+      grafico: grafLinea(serie, {h:96, dotColori:colori, etichette:etichette, fmt:v=>sgnIt(v,1),
+        aria:'strokes gained cumulato buca per buca'}),
+      chiusura:'Il cumulato chiude su <b>'+sgnIt(cum,1)+'</b>, che e’ esattamente il KPI dello strokes gained '+
+        'totale qui sopra: e’ lo stesso dato sommato nello stesso ordine.'})));
+    /* scorecard */
+    pane.sintesi.appendChild(el(pannello({titolo:'Scorecard',
+      grafico: grafScorecard(A.bucheCalc)})));
+  }
+  if(A.completo){
+    /* colpi verso il green, griglia dei nove settori */
+    const esG=statEsiti([g],null), esP0=statEsitiPutt([g]);
+    const cg={}; let tg=0;
+    ESITI.forEach(e=>{ cg[e.k]=(esG.conte[e.k]||0)-(esP0.conte[e.k]||0); tg+=cg[e.k]; });
+    if(tg>0) pane.sintesi.appendChild(el(pannello({titolo:'Colpi verso il green',
+      nota:'Dove sono finiti i '+tg+' colpi con settore registrato, rispetto alla bandiera.',
+      grafico: grafSettori(cg, tg)})));
+  }
   if(A.completo){
     const cats=['tee','approccio','corto','putting'];
     const maxA=Math.max(0.5,...cats.map(k=>Math.abs(c.sgCat[k])));
@@ -6521,27 +7512,9 @@ VIEWS.riepilogoGiro = function(p){
     }
   }
 
-  /* ══ v10: ARCO DEL GIRO — dove il giro si e' deciso ══ */
-  {
-    const AR=statArco(A);
-    if(AR && AR.punti.length>=9){
-      const nb=x=>x!==null&&x!==undefined? 'buche '+(x.i+1)+'\u2013'+(x.i+AR.W) : '\u2014';
-      pane.sintesi.appendChild(el('<div class="card"><h2>L\u2019arco del giro</h2>'+
-        '<div class="hint">Strokes gained <b>cumulato</b> buca per buca: dove il giro si e\u2019 deciso. '+
-        'Sopra lo zero stai guadagnando sulla baseline, sotto la stai perdendo.</div>'+
-        svgLinea(AR.punti, {h:120, zero:true, colore:'var(--dv-blue)', fmt:v=>sgn(v,1),
-          aria:'strokes gained cumulato buca per buca'})+
-        '<table class="stat" style="margin-top:8px"><tbody>'+
-        '<tr><td>Miglior tratto di tre buche</td><td class="n">'+nb(AR.best)+'</td>'+
-          '<td class="n pos">'+(AR.best?sgn(AR.best.s,1):'\u2014')+'</td></tr>'+
-        '<tr><td>Peggior tratto di tre buche</td><td class="n">'+nb(AR.worst)+'</td>'+
-          '<td class="n neg">'+(AR.worst?sgn(AR.worst.s,1):'\u2014')+'</td></tr>'+
-        '</tbody></table>'+
-        '<div class="stcap">Arccos la chiama <i>Round Arc</i>. I sei blocchi da tre buche delle statistiche di '+
-        'periodo sono un\u2019aggregazione piu\u2019 grossolana della stessa informazione: sul giro singolo la '+
-        'curva e\u2019 strettamente migliore, perche\u2019 mostra anche <i>quando</i> il giro ha girato.</div></div>'));
-    }
-  }
+  /* v12: l'arco del giro e' stato rifatto in cima alla Sintesi col cursore al
+     tocco e i pallini colorati per esito; la versione precedente e' rimossa
+     per non avere due volte lo stesso grafico. */
 
   /* ══ GIOCO LUNGO ══ */
   if(A.completo){
@@ -6726,7 +7699,9 @@ VIEWS.riepilogoGiro = function(p){
   del.onclick=()=>{ if(confirm('Eliminare questo giro?\n\nNon viene distrutto: resta nelle copie automatiche e, sul repository, il file viene spostato fra i cancellati.')){
     eliminaGiroLocale(g); nav=[{view:'home'}]; render(); } };
   body.appendChild(del);
-  return {header:'Riepilogo giro', body};
+  return {header: circoloBreve(g.circolo),
+    sub: fmtDataLunga(g.data)+' · tee '+String(g.tee||'').toLowerCase()+' · '+c.nBuche+' buche',
+    body:body};
 };
 
 /* ---------------- CORREZIONE DI UN GIRO SALVATO ---------------- */
