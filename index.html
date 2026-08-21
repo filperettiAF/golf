@@ -52,10 +52,24 @@
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0; height:100%; background:var(--bg); color:var(--testo);
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif; overscroll-behavior:none;}
-  body{padding-top:var(--safe-top); padding-bottom:var(--safe-bottom); user-select:none;}
+  /* v12: il rientro della tacca lo gestiscono intestazione e barra, ciascuna
+     una volta. Prima lo aggiungeva ANCHE il body: dalla ver10 (intestazione
+     dentro #app col proprio calc) il rientro in alto era doppio, e sotto la
+     barra restava una striscia vuota. Visibile solo installata, dove env()
+     non e' zero: nessun collaudo in Chromium poteva prenderlo. */
+  body{user-select:none;}
   /* v12 — intestazione e barra ferme, solo l'area centrale scorre. */
   html,body{height:100%; overflow:hidden;}
   #app{height:100%; display:flex; flex-direction:column; overflow:hidden;}
+  /* v12b: il 100% su iPhone e' l'altezza della finestra CON le barre di Safari
+     aperte, e siccome il body non scorre piu' le barre non si ritirano mai:
+     l'app sembrava non aprirsi a schermo intero. dvh e' l'altezza dinamica
+     vera; dove non esiste resta il 100%. Installata dalla schermata Home il
+     problema non c'e' comunque, perche' le barre non esistono. */
+  @supports (height:100dvh){
+    html,body{height:100dvh;}
+    #app{height:100dvh;}
+  }
   header.topbar{flex:0 0 auto; z-index:20; background:var(--card); color:var(--testo);
     display:flex; align-items:flex-start; gap:8px; border-bottom:1px solid var(--bordo);
     padding:12px 16px 12px 16px; padding-top:calc(12px + var(--safe-top));}
@@ -341,7 +355,7 @@
   html[data-tema="scuro"] .metodo code{background:var(--surf2);}
 
   /* ── v8: layout generale e restituzione ───────────────────────── */
-  main{padding-bottom:86px;}
+  main{padding-bottom:calc(86px + var(--safe-bottom));}
   /* v12 — barra inferiore del handoff: quattro voci pari, icone SVG stroke 2px,
      etichetta 10.5/600, voce attiva in verde e inattive in grigio tenue. */
   .bottombar{flex:0 0 auto; z-index:30; display:grid; grid-template-columns:repeat(4,1fr);
@@ -1445,6 +1459,11 @@ const SCHEMA_VERSION = 9;
 const CHIAVI = ['hcp_archivio_v3','hcp_bastoni_v2','hcp_giri','hcp_giri_archiviati','hcp_bozza_v3',
   'hcp_meta','hcp_impostazioni','hcp_sync','hcp_giri_cancellati','hcp_sessioni'];
 let _mem = {}, _idb = null, _idbTimer = null, _idbPending = {};
+
+/* Versione dell'APP (non dello schema dati, che resta v9). Mostrata in Altro:
+   e' la risposta alla domanda "sto guardando la versione nuova o la copia in
+   cache?", che finora richiedeva un confronto di md5. */
+const APP_VERSIONE = 'ver12';
 
 const IMPOSTAZIONI_DEFAULT = {
   misura:'bandiera',        // bandiera | centro | misto
@@ -4827,7 +4846,7 @@ VIEWS.altro = function(){
     c.appendChild(it);
   });
   body.appendChild(c);
-  return {header:'Altro', sub:'utilita’, dati e metodo', body:body};
+  return {header:'Altro', sub:'utilita’, dati e metodo · app '+APP_VERSIONE+' · schema v9', body:body};
 };
 
 /* ---------------- NUOVO GIRO ---------------- */
